@@ -1,0 +1,8 @@
+[deps]
+MuladdMacro = "46d2c3a1-f734-5fdb-9937-b9b9aeba4221"
+OrdinaryDiffEqLowStorageRK = "b0944070-b475-4768-8dec-fb6eb410534d"
+OrdinaryDiffEqSSPRK = "669c94d9-1f4b-4b64-b377-1aa079aa2388"
+Static = "aedffcd0-7271-4cad-89d0-dc628f76c6d3"
+Symbolics = "0c5d862f-8b57-4792-8d23-62f2024744c7"
+Trixi = "a7f1ee26-1774-49b1-8366-f1abc58fbfcb"
+TrixiShallowWater = "804cb1fc-5b08-4398-a671-a789bfe091b3"
