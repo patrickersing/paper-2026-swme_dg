@@ -12,29 +12,31 @@ include("../src/main.jl")
 equations = ShallowWaterLinearizedMomentEquations1D(gravity = 9.81, n_moments = 3)
 
 ### Create manufactured solution for method of manufactured solutions (MMS)
+
 # Symbolic Variables
-
-n = equations.n_moments
-
 @variables x_sym[1], t_sym, g
 
+# Define Differentials
+Dt, Dx = Differential(t_sym), Differential(x_sym[1])
+
+## Initial condition
+###############################################################################
 # Primitive Variables
 H = 7 + cos(sqrt(2) * 2 * pi * x_sym[1]) * cos(2 * pi * t_sym)
 v = 0.5
 b = 2 + 0.5 * sinpi(sqrt(2) * x_sym[1])
 h = H - b
-a = [1 for i in 1:n]#sin(i/n * pi/2) for i in 1:n] # ensure positive moments
+a = [1 for i in 1:equations.n_moments]
 
 init = [H, v, a..., b]
 
-# Define Differentials
-Dt, Dx = Differential(t_sym), Differential(x_sym[1])
-
+## PDE
+###############################################################################
 # precompute the sum term
-sum_moments = sum(h * a[j]^2 / (2j + 1) for j in 1:n)
+sum_moments = sum(h * a[j]^2 / (2j + 1) for j in 1:equations.n_moments)
 
 # additional moment equations 
-mom_eqs = [Dt(h * a[i]) + Dx(2 * h * v * a[i]) - v * Dx(h * a[i]) for i in 1:n]
+mom_eqs = [Dt(h * a[i]) + Dx(2 * h * v * a[i]) - v * Dx(h * a[i]) for i in 1:equations.n_moments]
 
 # PDE Source Terms
 eqs = [
@@ -44,10 +46,12 @@ eqs = [
     0
 ]
 
-# # Expand derivatives
+## Create the functions for the manufactured solution
+########################################################################################
+# Expand derivatives
 du_exprs = expand_derivatives.(eqs)
 
-# # Build functions
+# Build functions
 du_funcs = build_function.(du_exprs, Ref(x_sym), t_sym, g, expression = Val(false))
 
 init_funcs = build_function.(init, Ref(x_sym), t_sym, expression = Val(false))
@@ -56,7 +60,7 @@ init_funcs = build_function.(init, Ref(x_sym), t_sym, expression = Val(false))
 function initial_condition_convergence(x,
                                        t,
                                        equations::ShallowWaterLinearizedMomentEquations1D)
-    prim = SVector{3 + n, Float64}([f(x[1], t) for f in init_funcs]...)
+    prim = SVector{3 + equations.n_moments, Float64}([f(x[1], t) for f in init_funcs]...)
     return prim2cons(prim, equations)
 end
 
@@ -65,7 +69,7 @@ function source_terms_convergence(u,
                                   t,
                                   equations::ShallowWaterLinearizedMomentEquations1D)
     g = equations.gravity
-    return SVector{3 + n, Float64}([f(x[1], t, g) for f in du_funcs]...)
+    return SVector{3 + equations.n_moments, Float64}([f(x[1], t, g) for f in du_funcs]...)
 end
 
 initial_condition = initial_condition_convergence

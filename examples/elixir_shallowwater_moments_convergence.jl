@@ -53,10 +53,10 @@ eqs = [
 
 ## Create the functions for the manufactured solution
 ###################################################################################################
-# # Expand derivatives
+# Expand derivatives
 du_exprs = expand_derivatives.(eqs)
 
-# # Build functions
+# Build functions
 du_funcs = build_function.(du_exprs, Ref(x_sym), Ref(t_sym), g, expression = Val(false))
 
 init_funcs = build_function.(init, Ref(x_sym), t_sym, expression = Val(false))
