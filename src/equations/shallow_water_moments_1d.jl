@@ -9,24 +9,32 @@
 # 1D Shallow Water Moment Equations
 #####################################################################################################
 
-struct ShallowWaterMomentEquations1D{NVARS,NMOMENTS,RealT<:Real} <:
-       AbstractMomentEquations{1,NVARS,NMOMENTS}
+struct ShallowWaterMomentEquations1D{NVARS, NMOMENTS, RealT <: Real} <:
+       AbstractMomentEquations{1, NVARS, NMOMENTS}
     gravity::RealT   # gravitational acceleration
     H0::RealT        # constant "lake-at-rest" total water height
     n_moments::Integer  # number of moments
     # Moment matrices
-    A::SArray{Tuple{NMOMENTS,NMOMENTS,NMOMENTS},RealT}
-    B::SArray{Tuple{NMOMENTS,NMOMENTS,NMOMENTS},RealT}
-    C::SArray{Tuple{NMOMENTS,NMOMENTS},RealT}
+    A::SArray{Tuple{NMOMENTS, NMOMENTS, NMOMENTS}, RealT}
+    B::SArray{Tuple{NMOMENTS, NMOMENTS, NMOMENTS}, RealT}
+    C::SArray{Tuple{NMOMENTS, NMOMENTS}, RealT}
 
-    function ShallowWaterMomentEquations1D{NVARS,NMOMENTS,RealT}(
-        gravity::RealT,
-        H0::RealT,
-        n_moments::Integer,
-        A,
-        B::SArray{Tuple{NMOMENTS,NMOMENTS,NMOMENTS},RealT},
-        C::SArray{Tuple{NMOMENTS,NMOMENTS},RealT},
-    ) where {NVARS,NMOMENTS,RealT<:Real}
+    function ShallowWaterMomentEquations1D{NVARS, NMOMENTS, RealT}(gravity::RealT,
+                                                                   H0::RealT,
+                                                                   n_moments::Integer,
+                                                                   A,
+                                                                   B::SArray{Tuple{NMOMENTS,
+                                                                                   NMOMENTS,
+                                                                                   NMOMENTS},
+                                                                             RealT},
+                                                                   C::SArray{Tuple{NMOMENTS,
+                                                                                   NMOMENTS},
+                                                                             RealT}) where {
+                                                                                            NVARS,
+                                                                                            NMOMENTS,
+                                                                                            RealT <:
+                                                                                            Real
+                                                                                            }
         new(gravity, H0, n_moments, A, B, C)
     end
 end
@@ -47,19 +55,20 @@ function ShallowWaterMomentEquations1D(; gravity, H0 = zero(gravity), n_moments)
     B = compute_B_tensor(n_moments)
     C = compute_C_matrix(n_moments)
 
-    return ShallowWaterMomentEquations1D{NVARS,NMOMENTS,RealT}(
-        gravity,
-        H0,
-        n_moments,
-        A,
-        B,
-        C,
-    )
+    return ShallowWaterMomentEquations1D{NVARS, NMOMENTS, RealT}(gravity,
+                                                                 H0,
+                                                                 n_moments,
+                                                                 A,
+                                                                 B,
+                                                                 C)
 end
 
-@inline function Base.real(
-    ::ShallowWaterMomentEquations1D{NVARS,NMOMENTS,RealT},
-) where {NVARS,NMOMENTS,RealT<:Real}
+@inline function Base.real(::ShallowWaterMomentEquations1D{NVARS, NMOMENTS, RealT}) where {
+                                                                                           NVARS,
+                                                                                           NMOMENTS,
+                                                                                           RealT <:
+                                                                                           Real
+                                                                                           }
     RealT
 end
 
@@ -126,15 +135,13 @@ For details see Section 9.2.5 of the book:
   1st edition
   ISBN 0471987662
 """
-@inline function Trixi.boundary_condition_slip_wall(
-    u_inner,
-    orientation_or_normal,
-    direction,
-    x,
-    t,
-    surface_flux_functions,
-    equations::ShallowWaterMomentEquations1D,
-)
+@inline function Trixi.boundary_condition_slip_wall(u_inner,
+                                                    orientation_or_normal,
+                                                    direction,
+                                                    x,
+                                                    t,
+                                                    surface_flux_functions,
+                                                    equations::ShallowWaterMomentEquations1D)
     surface_flux_function, nonconservative_flux_function = surface_flux_functions
 
     # Create the "external" boundary solution state
@@ -147,33 +154,27 @@ For details see Section 9.2.5 of the book:
 
     # Calculate the boundary flux
     if iseven(direction) # u_inner is "left" of boundary, u_boundary is "right" of boundary
-        flux =
-            surface_flux_function(u_inner, u_boundary, orientation_or_normal, equations)
-        noncons_flux = nonconservative_flux_function(
-            u_inner,
-            u_boundary,
-            orientation_or_normal,
-            equations,
-        )
+        flux = surface_flux_function(u_inner, u_boundary, orientation_or_normal,
+                                     equations)
+        noncons_flux = nonconservative_flux_function(u_inner,
+                                                     u_boundary,
+                                                     orientation_or_normal,
+                                                     equations)
     else # u_boundary is "left" of boundary, u_inner is "right" of boundary
-        flux =
-            surface_flux_function(u_boundary, u_inner, orientation_or_normal, equations)
-        noncons_flux = nonconservative_flux_function(
-            u_inner,
-            u_boundary,
-            orientation_or_normal,
-            equations,
-        )
+        flux = surface_flux_function(u_boundary, u_inner, orientation_or_normal,
+                                     equations)
+        noncons_flux = nonconservative_flux_function(u_inner,
+                                                     u_boundary,
+                                                     orientation_or_normal,
+                                                     equations)
     end
     return flux, noncons_flux
 end
 
 # Calculate 1D advective portion of the flux for a single point
-@inline function Trixi.flux(
-    u,
-    orientation::Integer,
-    equations::ShallowWaterMomentEquations1D,
-)
+@inline function Trixi.flux(u,
+                            orientation::Integer,
+                            equations::ShallowWaterMomentEquations1D)
     # Extract conservative variables    
     h = waterheight(u, equations)
     hv = u[2]
@@ -188,10 +189,10 @@ end
     for i in eachmoment(equations)
         f2 += ha[i] * a[i] / (2 * i + 1)
     end
-    f_moments = MArray{nmoments(equations),real(equations)}(2 * ha * v)
+    f_moments = MArray{nmoments(equations), real(equations)}(2 * ha * v)
     contract_tensor!(f_moments, equations.A, a, a)
 
-    return SVector{nmoments(equations) + 3,real(equations)}(f1, f2, f_moments..., 0)
+    return SVector{nmoments(equations) + 3, real(equations)}(f1, f2, f_moments..., 0)
 end
 
 """
@@ -205,12 +206,10 @@ nonconservative [`flux_nonconservative_ec`](@ref).
 To obtain an entropy stable formulation the `surface_flux` can be set as
 `FluxPlusDissipation(flux_ec, DissipationLocalLaxFriedrichs()), flux_nonconservative_ec`.
 """
-@inline function flux_ec(
-    u_ll,
-    u_rr,
-    orientation::Integer,
-    equations::ShallowWaterMomentEquations1D,
-)
+@inline function flux_ec(u_ll,
+                         u_rr,
+                         orientation::Integer,
+                         equations::ShallowWaterMomentEquations1D)
     # Unpack left and right state
     h_ll = waterheight(u_ll, equations)
     h_rr = waterheight(u_rr, equations)
@@ -238,8 +237,8 @@ To obtain an entropy stable formulation the `surface_flux` can be set as
     end
 
     # Compute the moment fluxes.
-    f_moments =
-        MVector{nmoments(equations),real(equations)}(hv_avg * a_avg + ha_avg * v_avg)
+    f_moments = MVector{nmoments(equations), real(equations)}(hv_avg * a_avg +
+                                                              ha_avg * v_avg)
     # TODO: The tensor contraction still allocates heavily. How can we avoid this? 
     for k in eachmoment(equations),
         j in eachmoment(equations),
@@ -248,7 +247,7 @@ To obtain an entropy stable formulation the `surface_flux` can be set as
         f_moments[i] += equations.A[i, j, k] * ha_avg[j] * a_avg[k]
     end
 
-    return SVector{nmoments(equations) + 3,real(equations)}(f1, f2, f_moments..., 0)
+    return SVector{nmoments(equations) + 3, real(equations)}(f1, f2, f_moments..., 0)
 end
 
 """
@@ -261,12 +260,10 @@ and the nonconservative pressure formulation [`ShallowWaterMomentEquations1D`](@
 
 When the bottom topography is nonzero this scheme will be well-balanced when used with [`flux_ec`](@ref).
 """
-@inline function flux_nonconservative_ec(
-    u_ll,
-    u_rr,
-    orientation::Integer,
-    equations::ShallowWaterMomentEquations1D,
-)
+@inline function flux_nonconservative_ec(u_ll,
+                                         u_rr,
+                                         orientation::Integer,
+                                         equations::ShallowWaterMomentEquations1D)
     # Unpack left and right state
     h_ll = waterheight(u_ll, equations)
     h_rr = waterheight(u_rr, equations)
@@ -291,7 +288,7 @@ When the bottom topography is nonzero this scheme will be well-balanced when use
     f2 = g * h_ll * (h_jump + b_jump)
 
     # Compute the moment fluxes.
-    f_moments = MVector{nmoments(equations),real(equations)}(-v_ll * ha_jump)
+    f_moments = MVector{nmoments(equations), real(equations)}(-v_ll * ha_jump)
     # TODO: The tensor contraction still allocates heavily. How can we avoid this? 
     for k in eachmoment(equations),
         j in eachmoment(equations),
@@ -300,25 +297,21 @@ When the bottom topography is nonzero this scheme will be well-balanced when use
         f_moments[i] += equations.B[i, j, k] * a_ll[k] * ha_jump[j]
     end
 
-    return SVector{nmoments(equations) + 3,real(equations)}(0, f2, f_moments..., 0)
+    return SVector{nmoments(equations) + 3, real(equations)}(0, f2, f_moments..., 0)
 end
 
 # Specialized `DissipationLocalLaxFriedrichs` to avoid spurious dissipation in the bottom
 # topography
-@inline function (dissipation::DissipationLocalLaxFriedrichs)(
-    u_ll,
-    u_rr,
-    orientation_or_normal_direction,
-    equations::ShallowWaterMomentEquations1D,
-)
-    λ = dissipation.max_abs_speed(
-        u_ll,
-        u_rr,
-        orientation_or_normal_direction,
-        equations,
-    )
+@inline function (dissipation::DissipationLocalLaxFriedrichs)(u_ll,
+                                                              u_rr,
+                                                              orientation_or_normal_direction,
+                                                              equations::ShallowWaterMomentEquations1D)
+    λ = dissipation.max_abs_speed(u_ll,
+                                  u_rr,
+                                  orientation_or_normal_direction,
+                                  equations)
     diss = -0.5 * λ * (u_rr - u_ll)
-    return SVector(@views diss[1:(end-1)]..., zero(eltype(u_ll)))
+    return SVector(@views diss[1:(end - 1)]..., zero(eltype(u_ll)))
 end
 
 # TODO: How should we handle the wave speeds for the SWME?
@@ -342,12 +335,10 @@ end
 end
 
 # Less "cautious", i.e., less overestimating `λ_max` compared to `max_abs_speed_naive`
-@inline function Trixi.max_abs_speed(
-    u_ll,
-    u_rr,
-    orientation::Integer,
-    equations::ShallowWaterMomentEquations1D,
-)
+@inline function Trixi.max_abs_speed(u_ll,
+                                     u_rr,
+                                     orientation::Integer,
+                                     equations::ShallowWaterMomentEquations1D)
     # Unpack left and right state
     h_ll = waterheight(u_ll, equations)
     h_rr = waterheight(u_rr, equations)
@@ -381,7 +372,7 @@ end
     a = ha / h
     v = velocity(u, equations)
 
-    return SVector{nmoments(equations) + 3,real(equations)}(H, v, a..., b)
+    return SVector{nmoments(equations) + 3, real(equations)}(H, v, a..., b)
 end
 
 # Convert primitive to conservative variables
@@ -398,7 +389,7 @@ end
     ha = h * a
     hv = h * v
 
-    return SVector{nmoments(equations) + 3,real(equations)}(h, hv, ha..., b)
+    return SVector{nmoments(equations) + 3, real(equations)}(h, hv, ha..., b)
 end
 
 # Convert conservative variables to entropy variables
@@ -420,7 +411,7 @@ end
 
     w2 = v
 
-    w_moments = MVector{nmoments(equations),real(equations)}(undef)
+    w_moments = MVector{nmoments(equations), real(equations)}(undef)
     for i in eachmoment(equations)
         w_moments[i] = a[i] / (2 * i + 1)
     end
@@ -433,9 +424,8 @@ end
 end
 
 @inline function moments(u, equations::ShallowWaterMomentEquations1D)
-    return SVector{nmoments(equations),real(equations)}(
-        u[i] for i in (3:nmoments(equations)+2)
-    )
+    return SVector{nmoments(equations), real(equations)}(u[i]
+                                                         for i in (3:(nmoments(equations) + 2)))
 end
 
 # Helper function to extract the velocity vector from the conservative variables

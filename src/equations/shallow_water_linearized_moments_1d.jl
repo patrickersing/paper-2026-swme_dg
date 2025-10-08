@@ -9,17 +9,20 @@
 # 1D Shallow Water Linearized Moment Equations
 #####################################################################################################
 
-struct ShallowWaterLinearizedMomentEquations1D{NVARS,NMOMENTS,RealT<:Real} <:
-       AbstractMomentEquations{1,NVARS,NMOMENTS}
+struct ShallowWaterLinearizedMomentEquations1D{NVARS, NMOMENTS, RealT <: Real} <:
+       AbstractMomentEquations{1, NVARS, NMOMENTS}
     gravity::RealT   # gravitational acceleration
     H0::RealT        # constant "lake-at-rest" total water height
     n_moments::Integer  # number of moments
 
-    function ShallowWaterLinearizedMomentEquations1D{NVARS,NMOMENTS,RealT}(
-        gravity::RealT,
-        H0::RealT,
-        n_moments::Integer,
-    ) where {NVARS,NMOMENTS,RealT<:Real}
+    function ShallowWaterLinearizedMomentEquations1D{NVARS, NMOMENTS, RealT}(gravity::RealT,
+                                                                             H0::RealT,
+                                                                             n_moments::Integer) where {
+                                                                                                        NVARS,
+                                                                                                        NMOMENTS,
+                                                                                                        RealT <:
+                                                                                                        Real
+                                                                                                        }
         new(gravity, H0, n_moments)
     end
 end
@@ -29,35 +32,34 @@ end
 # gravitational acceleration. The reference total water height H0 defaults to 0.0 but is used for 
 # the "lake-at-rest" well-balancedness test cases. 
 function ShallowWaterLinearizedMomentEquations1D(;
-    gravity,
-    H0 = zero(gravity),
-    n_moments,
-)
+                                                 gravity,
+                                                 H0 = zero(gravity),
+                                                 n_moments,)
     RealT = promote_type(typeof(gravity), typeof(H0))
 
     # Extract number of layers and variables
     NMOMENTS = n_moments
     NVARS = NMOMENTS + 3    # h, hv, a_1, ..., a_NMOMENTS, b
 
-    return ShallowWaterLinearizedMomentEquations1D{NVARS,NMOMENTS,RealT}(
-        gravity,
-        H0,
-        n_moments,
-    )
+    return ShallowWaterLinearizedMomentEquations1D{NVARS, NMOMENTS, RealT}(gravity,
+                                                                           H0,
+                                                                           n_moments)
 end
 
-@inline function Base.real(
-    ::ShallowWaterLinearizedMomentEquations1D{NVARS,NMOMENTS,RealT},
-) where {NVARS,NMOMENTS,RealT<:Real}
+@inline function Base.real(::ShallowWaterLinearizedMomentEquations1D{NVARS, NMOMENTS,
+                                                                     RealT}) where {
+                                                                                    NVARS,
+                                                                                    NMOMENTS,
+                                                                                    RealT <:
+                                                                                    Real
+                                                                                    }
     RealT
 end
 
 Trixi.have_nonconservative_terms(::ShallowWaterLinearizedMomentEquations1D) = True()
 
-function Trixi.varnames(
-    ::typeof(cons2cons),
-    equations::ShallowWaterLinearizedMomentEquations1D,
-)
+function Trixi.varnames(::typeof(cons2cons),
+                        equations::ShallowWaterLinearizedMomentEquations1D)
     conservative_moments = ntuple(n -> "ha" * string(n), Val(nmoments(equations)))
 
     return ("h", "hv", conservative_moments..., "b")
@@ -65,10 +67,8 @@ end
 
 # We use the total layer heights, H = ∑h + b as primitive variables for easier visualization and setting initial
 # conditions
-function Trixi.varnames(
-    ::typeof(cons2prim),
-    equations::ShallowWaterLinearizedMomentEquations1D,
-)
+function Trixi.varnames(::typeof(cons2prim),
+                        equations::ShallowWaterLinearizedMomentEquations1D)
     primitive_moments = ntuple(n -> "a" * string(n), Val(nmoments(equations)))
     return ("H", "v", primitive_moments..., "b")
 end
@@ -121,15 +121,13 @@ For details see Section 9.2.5 of the book:
   1st edition
   ISBN 0471987662
 """
-@inline function Trixi.boundary_condition_slip_wall(
-    u_inner,
-    orientation_or_normal,
-    direction,
-    x,
-    t,
-    surface_flux_functions,
-    equations::ShallowWaterLinearizedMomentEquations1D,
-)
+@inline function Trixi.boundary_condition_slip_wall(u_inner,
+                                                    orientation_or_normal,
+                                                    direction,
+                                                    x,
+                                                    t,
+                                                    surface_flux_functions,
+                                                    equations::ShallowWaterLinearizedMomentEquations1D)
     surface_flux_function, nonconservative_flux_function = surface_flux_functions
 
     # Create the "external" boundary solution state
@@ -142,33 +140,27 @@ For details see Section 9.2.5 of the book:
 
     # Calculate the boundary flux
     if iseven(direction) # u_inner is "left" of boundary, u_boundary is "right" of boundary
-        flux =
-            surface_flux_function(u_inner, u_boundary, orientation_or_normal, equations)
-        noncons_flux = nonconservative_flux_function(
-            u_inner,
-            u_boundary,
-            orientation_or_normal,
-            equations,
-        )
+        flux = surface_flux_function(u_inner, u_boundary, orientation_or_normal,
+                                     equations)
+        noncons_flux = nonconservative_flux_function(u_inner,
+                                                     u_boundary,
+                                                     orientation_or_normal,
+                                                     equations)
     else # u_boundary is "left" of boundary, u_inner is "right" of boundary
-        flux =
-            surface_flux_function(u_boundary, u_inner, orientation_or_normal, equations)
-        noncons_flux = nonconservative_flux_function(
-            u_inner,
-            u_boundary,
-            orientation_or_normal,
-            equations,
-        )
+        flux = surface_flux_function(u_boundary, u_inner, orientation_or_normal,
+                                     equations)
+        noncons_flux = nonconservative_flux_function(u_inner,
+                                                     u_boundary,
+                                                     orientation_or_normal,
+                                                     equations)
     end
     return flux, noncons_flux
 end
 
 # Calculate 1D advective portion of the flux for a single point
-@inline function Trixi.flux(
-    u,
-    orientation::Integer,
-    equations::ShallowWaterLinearizedMomentEquations1D,
-)
+@inline function Trixi.flux(u,
+                            orientation::Integer,
+                            equations::ShallowWaterLinearizedMomentEquations1D)
     # Extract conservative variables    
     h = waterheight(u, equations)
     hv = u[2]
@@ -185,7 +177,7 @@ end
     end
     f_moments = 2 * ha * v
 
-    return SVector{nmoments(equations) + 3,real(equations)}(f1, f2, f_moments..., 0)
+    return SVector{nmoments(equations) + 3, real(equations)}(f1, f2, f_moments..., 0)
 end
 
 """
@@ -206,12 +198,10 @@ In the two-layer setting this combination is equivalent to the fluxes in:
   curvilinear meshes
   [DOI: 10.1007/s10915-024-02451-2](https://doi.org/10.1007/s10915-024-02451-2)
 """
-@inline function flux_ec(
-    u_ll,
-    u_rr,
-    orientation::Integer,
-    equations::ShallowWaterLinearizedMomentEquations1D,
-)
+@inline function flux_ec(u_ll,
+                         u_rr,
+                         orientation::Integer,
+                         equations::ShallowWaterLinearizedMomentEquations1D)
     # Unpack left and right state
     h_ll = waterheight(u_ll, equations)
     h_rr = waterheight(u_rr, equations)
@@ -239,9 +229,8 @@ In the two-layer setting this combination is equivalent to the fluxes in:
     end
     f_moments = hv_avg * a_avg + ha_avg * v_avg
 
-    return SVector{nmoments(equations) + 3,real(equations)}(f1, f2, f_moments..., 0)
+    return SVector{nmoments(equations) + 3, real(equations)}(f1, f2, f_moments..., 0)
 end
-
 
 """
     flux_nonconservative_ec(u_ll, u_rr, orientation::Integer,
@@ -253,12 +242,10 @@ and the nonconservative pressure formulation [`ShallowWaterLinearizedMomentEquat
 
 When the bottom topography is nonzero this scheme will be well-balanced when used with [`flux_ec`](@ref).
 """
-@inline function flux_nonconservative_ec(
-    u_ll,
-    u_rr,
-    orientation::Integer,
-    equations::ShallowWaterLinearizedMomentEquations1D,
-)
+@inline function flux_nonconservative_ec(u_ll,
+                                         u_rr,
+                                         orientation::Integer,
+                                         equations::ShallowWaterLinearizedMomentEquations1D)
     # Unpack left and right state
     h_ll = waterheight(u_ll, equations)
     h_rr = waterheight(u_rr, equations)
@@ -282,35 +269,29 @@ When the bottom topography is nonzero this scheme will be well-balanced when use
     f2 = g * h_ll * (h_jump + b_jump)
     f_moments = -v_ll * ha_jump
 
-    return SVector{nmoments(equations) + 3,real(equations)}(0, f2, f_moments..., 0)
+    return SVector{nmoments(equations) + 3, real(equations)}(0, f2, f_moments..., 0)
 end
 
 # Specialized `DissipationLocalLaxFriedrichs` to avoid spurious dissipation in the bottom
 # topography
-@inline function (dissipation::DissipationLocalLaxFriedrichs)(
-    u_ll,
-    u_rr,
-    orientation_or_normal_direction,
-    equations::ShallowWaterLinearizedMomentEquations1D,
-)
-    λ = dissipation.max_abs_speed(
-        u_ll,
-        u_rr,
-        orientation_or_normal_direction,
-        equations,
-    )
+@inline function (dissipation::DissipationLocalLaxFriedrichs)(u_ll,
+                                                              u_rr,
+                                                              orientation_or_normal_direction,
+                                                              equations::ShallowWaterLinearizedMomentEquations1D)
+    λ = dissipation.max_abs_speed(u_ll,
+                                  u_rr,
+                                  orientation_or_normal_direction,
+                                  equations)
     diss = -0.5 * λ * (u_rr - u_ll)
-    return SVector(@views diss[1:(end-1)]..., zero(eltype(u_ll)))
+    return SVector(@views diss[1:(end - 1)]..., zero(eltype(u_ll)))
 end
 
 # The eigenvalues for the 1D SWLME are taken from:
 # - Julian Koellermeier, Ernesto Pimentel-García (2022)
 #   Steady states and well-balanced schemes for shallow water moment equations with topography
 #   [DOI: 10.1016/j.amc.2022.127166](https://doi.org/10.1016/j.amc.2022.127166)
-@inline function Trixi.max_abs_speeds(
-    u,
-    equations::ShallowWaterLinearizedMomentEquations1D,
-)
+@inline function Trixi.max_abs_speeds(u,
+                                      equations::ShallowWaterLinearizedMomentEquations1D)
     h = waterheight(u, equations)
     a = moments(u, equations) / h
     v_m = velocity(u, equations)
@@ -326,12 +307,10 @@ end
 end
 
 # Less "cautious", i.e., less overestimating `λ_max` compared to `max_abs_speed_naive`
-@inline function Trixi.max_abs_speed(
-    u_ll,
-    u_rr,
-    orientation::Integer,
-    equations::ShallowWaterLinearizedMomentEquations1D,
-)
+@inline function Trixi.max_abs_speed(u_ll,
+                                     u_rr,
+                                     orientation::Integer,
+                                     equations::ShallowWaterLinearizedMomentEquations1D)
     # Unpack left and right state
     h_ll = waterheight(u_ll, equations)
     h_rr = waterheight(u_rr, equations)
@@ -365,14 +344,12 @@ end
     a = ha / h
     v = velocity(u, equations)
 
-    return SVector{nmoments(equations) + 3,real(equations)}(H, v, a..., b)
+    return SVector{nmoments(equations) + 3, real(equations)}(H, v, a..., b)
 end
 
 # Convert primitive to conservative variables
-@inline function Trixi.prim2cons(
-    prim,
-    equations::ShallowWaterLinearizedMomentEquations1D,
-)
+@inline function Trixi.prim2cons(prim,
+                                 equations::ShallowWaterLinearizedMomentEquations1D)
     # To extract the total layer height and velocity we reuse the waterheight and momentum functions 
     # from the conservative variables.
     H = waterheight(prim, equations)
@@ -385,15 +362,13 @@ end
     ha = h * a
     hv = h * v
 
-    return SVector{nmoments(equations) + 3,real(equations)}(h, hv, ha..., b)
+    return SVector{nmoments(equations) + 3, real(equations)}(h, hv, ha..., b)
 end
 
 # Convert conservative variables to entropy variables
 # The last entry still just carries the bottom topography values for convenience
-@inline function Trixi.cons2entropy(
-    u,
-    equations::ShallowWaterLinearizedMomentEquations1D,
-)
+@inline function Trixi.cons2entropy(u,
+                                    equations::ShallowWaterLinearizedMomentEquations1D)
     # Extract conservative variables and compute velocity
     h = waterheight(u, equations)
     v = velocity(u, equations)
@@ -410,7 +385,7 @@ end
 
     w2 = v
 
-    w_moments = MVector{nmoments(equations),real(equations)}(undef)
+    w_moments = MVector{nmoments(equations), real(equations)}(undef)
     for i in eachmoment(equations)
         w_moments[i] = a[i] / (2 * i + 1)
     end
@@ -418,17 +393,14 @@ end
     return SVector(w1, w2, w_moments..., b)
 end
 
-@inline function Trixi.waterheight(
-    u,
-    equations::ShallowWaterLinearizedMomentEquations1D,
-)
+@inline function Trixi.waterheight(u,
+                                   equations::ShallowWaterLinearizedMomentEquations1D)
     return u[1]
 end
 
 @inline function moments(u, equations::ShallowWaterLinearizedMomentEquations1D)
-    return SVector{nmoments(equations),real(equations)}(
-        u[i] for i in (3:nmoments(equations)+2)
-    )
+    return SVector{nmoments(equations), real(equations)}(u[i]
+                                                         for i in (3:(nmoments(equations) + 2)))
 end
 
 # Helper function to extract the velocity vector from the conservative variables
@@ -461,10 +433,8 @@ end
 # Calculate the error for the "lake-at-rest" test case where H = ∑h + b should
 # be a constant value over time. 
 # Note, assumes there is a single reference water height `H0` with which to compare.
-@inline function Trixi.lake_at_rest_error(
-    u,
-    equations::ShallowWaterLinearizedMomentEquations1D,
-)
+@inline function Trixi.lake_at_rest_error(u,
+                                          equations::ShallowWaterLinearizedMomentEquations1D)
     h = waterheight(u, equations)
     b = u[end]
 

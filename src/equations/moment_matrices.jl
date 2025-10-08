@@ -35,10 +35,10 @@ using StaticArrays: MArray, SArray
 # include the zero index
 function compute_A_tensor(n::Int, RealT = Float64)
     # save preliminary values in pre-allocated memory
-    A = zero(MArray{Tuple{n,n,n},RealT})
+    A = zero(MArray{Tuple{n, n, n}, RealT})
 
     # build the three term inner products
-    for i = 1:n, j = 1:n, k = 1:n
+    for i in 1:n, j in 1:n, k in 1:n
         # Use integer division so that the variable type of `s`, `i`, `j`, and `k` all match
         s = div(i + j + k, 2)
         if rem(i + j + k, 2) == 1 || abs(i - j) > k || k > i + j
@@ -46,12 +46,12 @@ function compute_A_tensor(n::Int, RealT = Float64)
         else
             # assumes unnormalized basis functions
             scaling = (2 * i + 1) * (-1)^(i + j + k) / (i + j + k + 1)
-            A[i, j, k] =
-                scaling * Adams_A(s - i) * Adams_A(s - j) * Adams_A(s - k) / Adams_A(s)
+            A[i, j, k] = scaling * Adams_A(s - i) * Adams_A(s - j) * Adams_A(s - k) /
+                         Adams_A(s)
         end
     end # i, j, k
 
-    return SArray{Tuple{n,n,n},RealT}(A)
+    return SArray{Tuple{n, n, n}, RealT}(A)
 end
 
 # Auxiliary function for triple product matrix construction
@@ -67,7 +67,7 @@ function Adams_A(n::Int)
     end
 
     if n >= 1
-        for j = 1:n
+        for j in 1:n
             A *= (2 * j - 1)
         end # j
         A /= factorial(n)
@@ -93,7 +93,7 @@ end
 # will be exact for the construction of the B tensor.
 function compute_B_tensor(n::Int, RealT = Float64)
     # save preliminary values in pre-allocated memory
-    B = zero(MArray{Tuple{n,n,n},RealT})
+    B = zero(MArray{Tuple{n, n, n}, RealT})
 
     # Given the number of moments `n` determine how many Legendre-Gauss
     # nodes are required and compute them
@@ -101,23 +101,23 @@ function compute_B_tensor(n::Int, RealT = Float64)
     lg_nodes, lg_weights = gauss_nodes_weights(M, RealT)
 
     # Precompute the values of \phi and \phi' evaluated at the mapped LG nodes
-    phi_values = Array{RealT,2}(undef, n, M)
-    phi_prime_values = Array{RealT,2}(undef, n, M)
-    for j = 1:n, m = 1:M
+    phi_values = Array{RealT, 2}(undef, n, M)
+    phi_prime_values = Array{RealT, 2}(undef, n, M)
+    for j in 1:n, m in 1:M
         x = 0.5f0 * (lg_nodes[m] + 1)
-        phi_values[j, m], phi_prime_values[j, m] =
-            shifted_legendre_polynomial_and_derivative(j, x)
+        phi_values[j, m], phi_prime_values[j, m] = shifted_legendre_polynomial_and_derivative(j,
+                                                                                              x)
     end # j, m
 
     # Precompute all the internal integrals
-    phi_j_integrals = Array{RealT,2}(undef, n, M)
+    phi_j_integrals = Array{RealT, 2}(undef, n, M)
     compute_inner_integrals!(phi_j_integrals, lg_nodes, lg_weights)
 
     # Compute everything using the precomputed work arrays
-    for i = 1:n, j = 1:n, k = 1:n
+    for i in 1:n, j in 1:n, k in 1:n
         # Legendre-Gauss quadrature loop for the outer integral
         res = 0
-        for m = 1:M
+        for m in 1:M
             # Outer LG quadrature node and weight
             w_m = lg_weights[m]
 
@@ -127,7 +127,7 @@ function compute_B_tensor(n::Int, RealT = Float64)
         B[i, j, k] = 0.5f0 * (2 * i + 1) * res
     end # i, j, k
 
-    return SArray{Tuple{n,n,n},RealT}(B)
+    return SArray{Tuple{n, n, n}, RealT}(B)
 end
 
 # Helper function to precompute and store every instance of the interior integral
@@ -143,13 +143,13 @@ function compute_inner_integrals!(phi_j_integrals, lg_nodes, lg_weights)
 
     n, M = size(phi_j_integrals)
 
-    for j = 1:n, m = 1:M
+    for j in 1:n, m in 1:M
         # Outer LG quadrature node and weight
         xi_m = lg_nodes[m]
 
         # For a given `m` and `j` first compute the inner integral
         # Technically, this integral could use fewer LG nodes, but ignore for now
-        for p = 1:M
+        for p in 1:M
             # Inner LG quadrature node and weight
             eta_p = lg_nodes[p]
             w_p = lg_weights[p]
@@ -189,7 +189,7 @@ end
 # Abramowitz & Stegun, Handbook of Mathematical Functions, Chapter 22
 function compute_C_matrix(n::Int, RealT = Float64)
     # save preliminary values in pre-allocated memory
-    C = zero(MArray{Tuple{n,n},RealT})
+    C = zero(MArray{Tuple{n, n}, RealT})
 
     # Given the number of moments `n` determine how many Legendre-Gauss
     # nodes are required and compute them
@@ -197,10 +197,10 @@ function compute_C_matrix(n::Int, RealT = Float64)
     lg_nodes, lg_weights = gauss_nodes_weights(M, RealT)
 
     # Compute everything on the fly (might be slow)
-    for i = 1:n, j = 1:n
+    for i in 1:n, j in 1:n
         # Legendre-Gauss quadrature loop for the outer integral
         res = 0
-        for m = 1:M
+        for m in 1:M
             # Outer LG quadrature node and weight
             xi_m = lg_nodes[m]
             w_m = lg_weights[m]
@@ -219,7 +219,7 @@ function compute_C_matrix(n::Int, RealT = Float64)
         C[i, j] = 0.5f0 * (2 * i + 1) * res
     end # i, j
 
-    return SArray{Tuple{n,n},RealT}(C)
+    return SArray{Tuple{n, n}, RealT}(C)
 end
 
 # The tensor B and matrix C are built from the shifted and unnormalized Legendre polynomials.
@@ -243,7 +243,6 @@ end
 #
 # This routine computes and returns phi_N and phi'_N evaluated at a point `x`.
 function shifted_legendre_polynomial_and_derivative(N::Int, x::Real)
-
     if N == 0
         poly = 1
         deriv = 0
@@ -258,7 +257,7 @@ function shifted_legendre_polynomial_and_derivative(N::Int, x::Real)
 
         poly = 0
         deriv = 0
-        for j = 2:N
+        for j in 2:N
             poly = ((2 * j - 1) * (1 - 2 * x) * poly_Nm1 - (j - 1) * poly_Nm2) / j
             deriv = deriv_Nm2 - 2 * (2 * j - 1) * poly_Nm1
             poly_Nm2 = poly_Nm1
@@ -270,7 +269,6 @@ function shifted_legendre_polynomial_and_derivative(N::Int, x::Real)
 
     return poly, deriv
 end
-
 
 #############################################################################
 # Routines taken from Trixi.jl to create the Legendre-Gauss quadrature.
@@ -309,16 +307,16 @@ function gauss_nodes_weights(n_nodes::Integer, RealT = Float64)
         return nodes, weights
     else # N > 1
         # Use symmetry property of the roots of the Legendre polynomials
-        for i = 0:(div(N + 1, 2)-1)
+        for i in 0:(div(N + 1, 2) - 1)
             # Starting guess for Newton method
-            nodes[i+1] = -cospi(one(RealT) / (2 * N + 2) * (2 * i + 1))
+            nodes[i + 1] = -cospi(one(RealT) / (2 * N + 2) * (2 * i + 1))
 
             # Newton iteration to find root of Legendre polynomial (= integration node)
-            for k = 0:n_iterations
-                poly, deriv = legendre_polynomial_and_derivative(N + 1, nodes[i+1])
+            for k in 0:n_iterations
+                poly, deriv = legendre_polynomial_and_derivative(N + 1, nodes[i + 1])
                 dx = -poly / deriv
-                nodes[i+1] += dx
-                if abs(dx) < tolerance * abs(nodes[i+1])
+                nodes[i + 1] += dx
+                if abs(dx) < tolerance * abs(nodes[i + 1])
                     break
                 end
 
@@ -328,19 +326,19 @@ function gauss_nodes_weights(n_nodes::Integer, RealT = Float64)
             end
 
             # Calculate weight
-            poly, deriv = legendre_polynomial_and_derivative(N + 1, nodes[i+1])
-            weights[i+1] = (2 * N + 3) / ((1 - nodes[i+1]^2) * deriv^2)
+            poly, deriv = legendre_polynomial_and_derivative(N + 1, nodes[i + 1])
+            weights[i + 1] = (2 * N + 3) / ((1 - nodes[i + 1]^2) * deriv^2)
 
             # Set nodes and weights according to symmetry properties
-            nodes[N+1-i] = -nodes[i+1]
-            weights[N+1-i] = weights[i+1]
+            nodes[N + 1 - i] = -nodes[i + 1]
+            weights[N + 1 - i] = weights[i + 1]
         end
 
         # If odd number of nodes, set center node to origin (= 0.0) and calculate weight
         if n_nodes % 2 == 1
             poly, deriv = legendre_polynomial_and_derivative(N + 1, zero(RealT))
-            nodes[div(N, 2)+1] = 0
-            weights[div(N, 2)+1] = (2 * N + 3) / deriv^2
+            nodes[div(N, 2) + 1] = 0
+            weights[div(N, 2) + 1] = (2 * N + 3) / deriv^2
         end
 
         return nodes, weights
@@ -374,7 +372,7 @@ function legendre_polynomial_and_derivative(N::Int, x::Real)
 
         poly = zero(RealT)
         deriv = zero(RealT)
-        for i = 2:N
+        for i in 2:N
             poly = ((2 * i - 1) * x * poly_Nm1 - (i - 1) * poly_Nm2) / i
             deriv = deriv_Nm2 + (2 * i - 1) * poly_Nm1
             poly_Nm2 = poly_Nm1
@@ -404,7 +402,7 @@ end
 # TODO: reference paper
 
 function test_moment_matrices(A, B, n)
-    for i = 1:n, j = 1:n, k = 1:n
+    for i in 1:n, j in 1:n, k in 1:n
         res = B[i, j, k] / (2 * i + 1) + B[k, j, i] / (2 * k + 1) + A[k, j, i] / (2 * k + 1)
         #@assert res < 1e-12
         println("i = $i, j = $j, k = $k, res = $res")
@@ -414,12 +412,12 @@ end
 
 # Directly compute the A tensor from B using the relation
 #  A_ijk / (2i + 1) = - B_ijk / (2i + 1) - B_kji / (2k + 1)
-function compute_A_tensor_from_B(B::SArray{Tuple{N,N,N},RealT}) where {N,RealT}
-    A = zero(MArray{Tuple{N,N,N},RealT})
+function compute_A_tensor_from_B(B::SArray{Tuple{N, N, N}, RealT}) where {N, RealT}
+    A = zero(MArray{Tuple{N, N, N}, RealT})
 
-    for i = 1:N, j = 1:N, k = 1:N
+    for i in 1:N, j in 1:N, k in 1:N
         A[i, j, k] = -(2i + 1) * (B[i, j, k] / (2i + 1) + B[k, j, i] / (2k + 1))
     end # i, j, k
 
-    return SArray{Tuple{N,N,N},RealT}(A)
+    return SArray{Tuple{N, N, N}, RealT}(A)
 end

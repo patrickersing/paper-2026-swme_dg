@@ -23,7 +23,7 @@ H = 7 + cos(sqrt(2) * 2 * pi * x_sym[1]) * cos(2 * pi * t_sym)
 v = 0.5
 b = 2 + 0.5 * sinpi(sqrt(2) * x_sym[1])
 h = H - b
-a = [1 for i = 1:n]#sin(i/n * pi/2) for i in 1:n] # ensure positive moments
+a = [1 for i in 1:n]#sin(i/n * pi/2) for i in 1:n] # ensure positive moments
 
 init = [H, v, a..., b]
 
@@ -31,17 +31,17 @@ init = [H, v, a..., b]
 Dt, Dx = Differential(t_sym), Differential(x_sym[1])
 
 # precompute the sum term
-sum_moments = sum(h * a[j]^2 / (2j + 1) for j = 1:n)
+sum_moments = sum(h * a[j]^2 / (2j + 1) for j in 1:n)
 
 # additional moment equations 
-mom_eqs = [Dt(h * a[i]) + Dx(2 * h * v * a[i]) - v * Dx(h * a[i]) for i = 1:n]
+mom_eqs = [Dt(h * a[i]) + Dx(2 * h * v * a[i]) - v * Dx(h * a[i]) for i in 1:n]
 
 # PDE Source Terms
 eqs = [
     Dt(h) + Dx(h * v),
     Dt(h * v) + Dx(h * v^2 + sum_moments) + g * h * Dx(h + b),
     mom_eqs...,
-    0,
+    0
 ]
 
 # # Expand derivatives
@@ -53,23 +53,19 @@ du_funcs = build_function.(du_exprs, Ref(x_sym), t_sym, g, expression = Val(fals
 init_funcs = build_function.(init, Ref(x_sym), t_sym, expression = Val(false))
 
 # Trixi functions
-function initial_condition_convergence(
-    x,
-    t,
-    equations::ShallowWaterLinearizedMomentEquations1D,
-)
-    prim = SVector{3 + n,Float64}([f(x[1], t) for f in init_funcs]...)
+function initial_condition_convergence(x,
+                                       t,
+                                       equations::ShallowWaterLinearizedMomentEquations1D)
+    prim = SVector{3 + n, Float64}([f(x[1], t) for f in init_funcs]...)
     return prim2cons(prim, equations)
 end
 
-function source_terms_convergence(
-    u,
-    x,
-    t,
-    equations::ShallowWaterLinearizedMomentEquations1D,
-)
+function source_terms_convergence(u,
+                                  x,
+                                  t,
+                                  equations::ShallowWaterLinearizedMomentEquations1D)
     g = equations.gravity
-    return SVector{3 + n,Float64}([f(x[1], t, g) for f in du_funcs]...)
+    return SVector{3 + n, Float64}([f(x[1], t, g) for f in du_funcs]...)
 end
 
 initial_condition = initial_condition_convergence
@@ -78,33 +74,27 @@ initial_condition = initial_condition_convergence
 # Get the DG approximation space
 volume_flux = (flux_ec, flux_nonconservative_ec)
 surface_flux = (flux_ec, flux_nonconservative_ec)
-solver = DGSEM(
-    polydeg = 3,
-    surface_flux = surface_flux,
-    volume_integral = VolumeIntegralFluxDifferencing(volume_flux),
-)
+solver = DGSEM(polydeg = 3,
+               surface_flux = surface_flux,
+               volume_integral = VolumeIntegralFluxDifferencing(volume_flux))
 
 ###############################################################################
 # Get the TreeMesh and setup a periodic mesh
 
 coordinates_min = 0.0
 coordinates_max = sqrt(2.0)
-mesh = TreeMesh(
-    coordinates_min,
-    coordinates_max,
-    initial_refinement_level = 4,
-    n_cells_max = 10_000,
-    periodicity = true,
-)
+mesh = TreeMesh(coordinates_min,
+                coordinates_max,
+                initial_refinement_level = 4,
+                n_cells_max = 10_000,
+                periodicity = true)
 
 # create the semi discretization object
-semi = SemidiscretizationHyperbolic(
-    mesh,
-    equations,
-    initial_condition,
-    solver,
-    source_terms = source_terms_convergence,
-)
+semi = SemidiscretizationHyperbolic(mesh,
+                                    equations,
+                                    initial_condition,
+                                    solver,
+                                    source_terms = source_terms_convergence)
 
 ###############################################################################
 # ODE solvers, callbacks etc.
@@ -119,11 +109,9 @@ analysis_callback = AnalysisCallback(semi, interval = analysis_interval)
 
 alive_callback = AliveCallback(analysis_interval = analysis_interval)
 
-save_solution = SaveSolutionCallback(
-    interval = 200,
-    save_initial_solution = true,
-    save_final_solution = true,
-)
+save_solution = SaveSolutionCallback(interval = 200,
+                                     save_initial_solution = true,
+                                     save_final_solution = true)
 
 callbacks = CallbackSet(summary_callback, analysis_callback, alive_callback, save_solution)
 
@@ -131,11 +119,9 @@ callbacks = CallbackSet(summary_callback, analysis_callback, alive_callback, sav
 # run the simulation
 
 # use a Runge-Kutta method with automatic (error based) time step size control
-sol = solve(
-    ode,
-    RDPK3SpFSAL49();
-    abstol = 1.0e-8,
-    reltol = 1.0e-8,
-    ode_default_options()...,
-    callback = callbacks,
-);
+sol = solve(ode,
+            RDPK3SpFSAL49();
+            abstol = 1.0e-8,
+            reltol = 1.0e-8,
+            ode_default_options()...,
+            callback = callbacks,);

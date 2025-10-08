@@ -1,6 +1,6 @@
 
-abstract type AbstractMomentEquations{NDIMS,NVARS,NMOMENTS} <:
-              Trixi.AbstractEquations{NDIMS,NVARS} end
+abstract type AbstractMomentEquations{NDIMS, NVARS, NMOMENTS} <:
+              Trixi.AbstractEquations{NDIMS, NVARS} end
 
 """
     eachmoment(equations::AbstractMomentEquations)
@@ -17,9 +17,10 @@ end
 
 Retrieve the number of moments from an equation instance of the `AbstractMomentEquations`.
 """
-@inline function nmoments(
-    ::AbstractMomentEquations{NDIMS,NVARS,NMOMENTS},
-) where {NDIMS,NVARS,NMOMENTS}
+@inline function nmoments(::AbstractMomentEquations{NDIMS, NVARS, NMOMENTS}) where {NDIMS,
+                                                                                    NVARS,
+                                                                                    NMOMENTS
+                                                                                    }
     NMOMENTS
 end
 
