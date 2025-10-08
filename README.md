@@ -7,7 +7,7 @@ for the shallow water moment equations"
 1. Install Julia v1.10
 2. Download the repository
 ```
-git clone https://github.com/patrickersing/paper-2025-swme-dg_dev.git
+git clone git@github.com:patrickersing/paper-2025-swme-dg_dev.git
 ```
 1. Set the working directory to the main folder and instantiate the Julia environment using
 ```bash
