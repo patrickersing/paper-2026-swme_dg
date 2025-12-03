@@ -23,9 +23,6 @@ function initial_condition_smooth_periodic_wave(x, t, equations::ShallowWaterMom
     a[2] = -0.25
     
     b = 0.0
-    if -0.25 <= x[1] <= 0.25
-        b = 0.5 * cos(2.0 * π * x[1])
-    end
 
     return prim2cons(SVector(H, v, a..., b), equations)
 end
@@ -40,7 +37,7 @@ surface_flux = (FluxPlusDissipation(flux_ec, DissipationLocalLaxFriedrichs(Trixi
 #surface_flux = (FluxPlusDissipation(flux_ec, dissipation_pvm_force), flux_nonconservative_ec)
 
 indicator_var(u, equations) = u[2]^3
-basis = LobattoLegendreBasis(3)
+basis = LobattoLegendreBasis(4)
 indicator_sc = IndicatorHennemannGassner(equations, basis,
                                          alpha_max=0.5,
                                          alpha_min=0.001,
@@ -62,7 +59,7 @@ coordinates_max =  1.0
 
 mesh = TreeMesh(coordinates_min,
                 coordinates_max,
-                initial_refinement_level = 5, # 2^refinement_level
+                initial_refinement_level = 7, # 2^refinement_level
                 n_cells_max = 10_000,
                 periodicity = true)           
 
@@ -78,8 +75,9 @@ ode   = semidiscretize(semi, tspan)
 # Callbacks
 summary_callback = SummaryCallback()
 
-analysis_interval  =  100
-analysis_callback  =  AnalysisCallback(semi, interval  =  analysis_interval, save_analysis  =  false)
+analysis_interval  =  10
+analysis_callback  =  AnalysisCallback(semi, interval  =  analysis_interval, save_analysis  =  true,
+                                       extra_analysis_integrals = (entropy,))
 alive_callback     =  AliveCallback(analysis_interval  =  analysis_interval)
 save_solution      =  SaveSolutionCallback(interval = 100, save_initial_solution = true, save_final_solution = true)
 stepsize_callback  =  StepsizeCallback(cfl = 0.5)
