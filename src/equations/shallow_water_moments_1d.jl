@@ -96,30 +96,30 @@ end
 #   Steady states and well-balanced schemes for shallow water moment equations with topography
 #   [DOI: 10.1016/j.amc.2022.127166](https://doi.org/10.1016/j.amc.2022.127166)
 # """
-# @inline function source_term_bottom_friction(u, x, t,
-#                                            equations::ShallowWaterMomentEquations1D)
-#     friction = MVector{real(equations)}(undef, nmoments(equations) + 3)
-#     # Get waterheight, velocity and moments
-#     h = waterheight(u, equations)
-#     v = velocity(u, equations)
-#     a = moments(u, equations)
-#     sum_a = sum(a)
+@inline function TrixiShallowWater.source_term_bottom_friction(u, x, t, equations::ShallowWaterMomentEquations1D) 
+    # Get waterheight, velocity and moments
+    h = waterheight(u, equations)
+    v = velocity(u, equations)
+    a = moments(u, equations)
+     
+    sum_a = sum(a)
 
-#     # First and last entries are zero
-#     friction[0] = 0
-#     friction[end] = 0
-
-#     # for i in 1:nmoments(equations) + 1
-#     #     # TODO: implement friction coefficients ν,λ
-#     #     friction[i] = - nu/lambda * (2i + 1) * (v + sum_a)
-#     #     for j in eachmoment(equations)
-#     #         if isodd(i + j)
-#     #             z = (min(i-1,j) * min(i-1,j+1) / 2) * a[j]
-#     #         end
-#     #     end
-#     #     friction[i] -= nu / h * 4 * (2i +1) * z
-#     # end
-# end
+    nu     = 0.1
+    lambda = 0.1
+       
+    friction_v = - nu/lambda * (v + sum_a)
+    
+    friction_mom = MVector{nmoments(equations), real(equations)}(undef)
+    
+    for i in eachmoment(equations)
+        friction_mom[i] = - (2 * i + 1) * nu/lambda * (v + sum_a)
+        for j in eachmoment(equations)
+            friction_mom[i] += - (2 * i + 1) * nu/h * equations.C[i, j] * a[j] 
+        end
+    end
+        
+    return SVector(0, friction_v, friction_mom..., 0)
+end
 
 """
     boundary_condition_slip_wall(u_inner, orientation_or_normal, x, t, surface_flux_function,
@@ -464,4 +464,68 @@ end
 
     return equations.H0 - h + b
 end
+
+
+# Routines for PVM dissipation (Experimental)
+####################################################################################################
+@inline function generalized_Jacobian(u, equations::ShallowWaterMomentEquations1D)
+    h = waterheight(u, equations)
+    v = velocity(u, equations)
+    a = moments(u, equations) / h
+    g = equations.gravity
+
+    A = zero(MArray{Tuple{nmoments(equations) + 3, nmoments(equations) + 3}, real(equations)})
+
+    A[1, 3:nmoments(equations) + 2] .= 0
+
+    A[2, 1] = g * h - v^2 - sum(a[i]^2 / (2i + 1) for i in eachmoment(equations))
+    A[2, 2] = 2 * v
+    for i in eachmoment(equations)
+        A[2, i+2] = 2 * a[i] / (2 * i + 1)
+    end
+
+    for i in eachmoment(equations)
+        A[i+2, 1] = - 2 * v * a[i] - sum([equations.A[i,j,k] * a[j] * a[k] for j in eachmoment(equations), k in eachmoment(equations)])
+        A[i+2, 2] = 2 * a[i]
+        for j in eachmoment(equations)
+            A[i+2, j+2] = 2 * v + (sum([equations.A[i,j,k] * a[k] for k in eachmoment(equations)]) +
+                                   sum([equations.A[i,k,j] * a[k] for k in eachmoment(equations)]))
+        end
+    end
+
+    B = zero(MArray{Tuple{nmoments(equations) + 3, nmoments(equations) + 3}, real(equations)})
+
+    B[2, 1] = g * h
+    B[2, end] = g * h
+    for i in eachmoment(equations)
+        for j in eachmoment(equations)
+            B[i+2, j+2] = - v + sum([equations.B[i, j, k] * a[k] for k in eachmoment(equations)])
+        end
+    end
+
+    return SMatrix(A + B)
+end
+
+@inline function dissipation_pvm_force(u_ll, u_rr, orientation, equations::ShallowWaterMomentEquations1D)
+    S0 = max_abs_speed(u_ll, u_rr, 1, equations)
+
+    # Compute coefficiients for the polynomial viscosity matrix
+    alpha = MVector{3, real(equations)}(undef)
+    alpha[1] = S0 / 2
+    alpha[2] = 0.0
+    alpha[3] = 1 / (2 * S0)
+
+    # TODO: Compute proper Roe values for SWME
+    u_roe = 0.5 * (u_ll + u_rr)
+
+    A = generalized_Jacobian(u_roe, equations)
+
+    # Compute |A|[u] ≈ ∑α_iA^i[u]
+    dissipation = zero(u_ll)
+    for i in eachindex(alpha)
+        dissipation -= 0.5 * alpha[i] * (A^(i - 1)) * (u_rr - u_ll)
+    end
+    return SVector{nmoments(equations) + 3, real(equations)}(dissipation)
+end
+
 end # @muladd
