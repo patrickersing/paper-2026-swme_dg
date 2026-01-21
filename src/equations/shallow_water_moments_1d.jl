@@ -96,7 +96,7 @@ end
 #   Steady states and well-balanced schemes for shallow water moment equations with topography
 #   [DOI: 10.1016/j.amc.2022.127166](https://doi.org/10.1016/j.amc.2022.127166)
 # """
-@inline function TrixiShallowWater.source_term_bottom_friction(u, x, t, equations::ShallowWaterMomentEquations1D) 
+@inline function TrixiShallowWater.source_term_bottom_friction(u, x, t, equations::Union{ShallowWaterMomentEquations1D, ShallowWaterLinearizedMomentEquations1D}) 
     # Get waterheight, velocity and moments
     h = waterheight(u, equations)
     v = velocity(u, equations)
@@ -114,7 +114,7 @@ end
     for i in eachmoment(equations)
         friction_mom[i] = - (2 * i + 1) * nu/lambda * (v + sum_a)
         for j in eachmoment(equations)
-            friction_mom[i] += - (2 * i + 1) * nu/h * equations.C[i, j] * a[j] 
+            friction_mom[i] += - nu/h * equations.C[i, j] * a[j] 
         end
     end
         
@@ -301,7 +301,8 @@ When the bottom topography is nonzero this scheme will be well-balanced when use
 end
 
 # Specialized `DissipationLocalLaxFriedrichs` to avoid spurious dissipation in the bottom
-# topography
+# topography. For nonzero bottom topography [`Trixi.DissipationLaxFriedrichsEntropyVariables`](@extref)
+# should be used instead.
 @inline function (dissipation::DissipationLocalLaxFriedrichs)(u_ll,
                                                               u_rr,
                                                               orientation_or_normal_direction,
@@ -314,8 +315,45 @@ end
     return SVector(@views diss[1:(end - 1)]..., zero(eltype(u_ll)))
 end
 
-# TODO: How should we handle the wave speeds for the SWME?
-# For we simply use the eigenvalues of the SWLME taken from:
+# Specialized [`Trixi.DissipationLaxFriedrichsEntropyVariables`](@extref) for the SWME that avoids spurious 
+# dissipation in the bottom topography
+@inline function (dissipation::DissipationLaxFriedrichsEntropyVariables)(u_ll,
+                                                                         u_rr,
+                                                                         orientation_or_normal_direction,
+                                                                         equations::Union{ShallowWaterLinearizedMomentEquations1D,
+                                                                                          ShallowWaterMomentEquations1D})
+    λ = dissipation.max_abs_speed(u_ll,
+                                  u_rr,
+                                  orientation_or_normal_direction,
+                                  equations)
+
+    # Convert to entropy variables
+    w_ll = Trixi.cons2entropy(u_ll, equations)
+    w_rr = Trixi.cons2entropy(u_rr, equations)
+    # Exclude the bottom topography from the jump
+    w_jump = SVector{nmoments(equations) + 2}(@views (w_rr - w_ll)[1:(end - 1)])
+
+    # Compute the matrix H = du/dw at the average state
+    h_avg = 0.5 * (u_ll[1] + u_rr[1])
+    v_avg = 0.5 * (Trixi.velocity(u_ll, equations) + Trixi.velocity(u_rr, equations))
+    a_avg = SVector(0.5 * (moments(u_ll, equations) / u_ll[1] + moments(u_rr, equations) / u_rr[1]))
+    g = equations.gravity
+ 
+    # Construct the H matrix from H = yy' + Iz
+    y = SVector{nmoments(equations) + 2, real(equations)}(1, v_avg, a_avg...)
+    z = SVector{nmoments(equations) + 2, real(equations)}(ntuple(k -> k == 1 ? 0 :
+                                                            k == 2 ? g*h_avg :
+                                                            (2k-3)*g*h_avg,
+                                                            nmoments(equations) + 2))
+
+    H = SMatrix{nmoments(equations) + 2, nmoments(equations) + 2, real(equations)}(1/g*(y*y' + diagm(z))) 
+
+    diss = SVector{nmoments(equations) + 2, real(equations)}(-0.5 .* λ .* (H * w_jump))
+
+    return SVector{nmoments(equations) + 3, real(equations)}(diss..., zero(eltype(u_ll)))
+end
+
+# The eigenvalues are approximate with those of the SWLME taken from:
 # - Julian Koellermeier, Ernesto Pimentel-García (2022)
 #   Steady states and well-balanced schemes for shallow water moment equations with topography
 #   [DOI: 10.1016/j.amc.2022.127166](https://doi.org/10.1016/j.amc.2022.127166)
@@ -455,14 +493,14 @@ end
     return e
 end
 
-# Calculate the error for the "lake-at-rest" test case where H = ∑h + b should
+# Calculate the error for the "lake-at-rest" test case where H = h + b should
 # be a constant value over time. 
 # Note, assumes there is a single reference water height `H0` with which to compare.
 @inline function Trixi.lake_at_rest_error(u, equations::ShallowWaterMomentEquations1D)
     h = waterheight(u, equations)
     b = u[end]
 
-    return equations.H0 - h + b
+    return abs(equations.H0 - (h + b))
 end
 
 

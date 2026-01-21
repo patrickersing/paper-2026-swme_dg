@@ -14,16 +14,19 @@ struct ShallowWaterLinearizedMomentEquations1D{NVARS, NMOMENTS, RealT <: Real} <
     gravity::RealT   # gravitational acceleration
     H0::RealT        # constant "lake-at-rest" total water height
     n_moments::Integer  # number of moments
+    C::SArray{Tuple{NMOMENTS, NMOMENTS}, RealT} # Moment matrix for friction term
 
     function ShallowWaterLinearizedMomentEquations1D{NVARS, NMOMENTS, RealT}(gravity::RealT,
                                                                              H0::RealT,
-                                                                             n_moments::Integer) where {
+                                                                             n_moments::Integer,
+                                                                             C::SArray{Tuple{NMOMENTS,
+                                                                                             NMOMENTS}, RealT}) where {
                                                                                                         NVARS,
                                                                                                         NMOMENTS,
                                                                                                         RealT <:
                                                                                                         Real
                                                                                                         }
-        new(gravity, H0, n_moments)
+        new(gravity, H0, n_moments, C)
     end
 end
 
@@ -41,9 +44,12 @@ function ShallowWaterLinearizedMomentEquations1D(;
     NMOMENTS = n_moments
     NVARS = NMOMENTS + 3    # h, hv, a_1, ..., a_NMOMENTS, b
 
+    C = compute_C_matrix(n_moments)
+
     return ShallowWaterLinearizedMomentEquations1D{NVARS, NMOMENTS, RealT}(gravity,
                                                                            H0,
-                                                                           n_moments)
+                                                                           n_moments,
+                                                                           C)
 end
 
 @inline function Base.real(::ShallowWaterLinearizedMomentEquations1D{NVARS, NMOMENTS,
@@ -72,40 +78,6 @@ function Trixi.varnames(::typeof(cons2prim),
     primitive_moments = ntuple(n -> "a" * string(n), Val(nmoments(equations)))
     return ("H", "v", primitive_moments..., "b")
 end
-
-# Source term for friction
-# """
-#     source_term_bottom_friction(u, x, t, equations::ShallowWaterLinearizedMomentEquations1D)
-
-# For details see the paper:
-# - Julian Koellermeier, Ernesto Pimentel-García (2022)
-#   Steady states and well-balanced schemes for shallow water moment equations with topography
-#   [DOI: 10.1016/j.amc.2022.127166](https://doi.org/10.1016/j.amc.2022.127166)
-# """
-# @inline function source_term_bottom_friction(u, x, t,
-#                                            equations::ShallowWaterLinearizedMomentEquations1D)
-#     friction = MVector{real(equations)}(undef, nmoments(equations) + 3)
-#     # Get waterheight, velocity and moments
-#     h = waterheight(u, equations)
-#     v = velocity(u, equations)
-#     a = moments(u, equations)
-#     sum_a = sum(a)
-
-#     # First and last entries are zero
-#     friction[0] = 0
-#     friction[end] = 0
-
-#     # for i in 1:nmoments(equations) + 1
-#     #     # TODO: implement friction coefficients ν,λ
-#     #     friction[i] = - nu/lambda * (2i + 1) * (v + sum_a)
-#     #     for j in eachmoment(equations)
-#     #         if isodd(i + j)
-#     #             z = (min(i-1,j) * min(i-1,j+1) / 2) * a[j]
-#     #         end
-#     #     end
-#     #     friction[i] -= nu / h * 4 * (2i +1) * z
-#     # end
-# end
 
 """
     boundary_condition_slip_wall(u_inner, orientation_or_normal, x, t, surface_flux_function,
@@ -430,7 +402,7 @@ end
     return e
 end
 
-# Calculate the error for the "lake-at-rest" test case where H = ∑h + b should
+# Calculate the error for the "lake-at-rest" test case where H = h + b should
 # be a constant value over time. 
 # Note, assumes there is a single reference water height `H0` with which to compare.
 @inline function Trixi.lake_at_rest_error(u,
@@ -438,6 +410,6 @@ end
     h = waterheight(u, equations)
     b = u[end]
 
-    return equations.H0 - h + b
+    return abs(equations.H0 - (h + b))
 end
 end # @muladd

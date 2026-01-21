@@ -55,7 +55,7 @@ function compute_A_tensor(n::Int, RealT = Float64)
 end
 
 # Auxiliary function for triple product matrix construction
-# that computes the quantity A(n) = (2n-1)!! / n! from the
+# that computes the quantity A(n) = (2n-1)! / n! from the
 # Adams paper with n >= 0. Here we call the function Adams_A
 # to avoid name conflicts.
 function Adams_A(n::Int)

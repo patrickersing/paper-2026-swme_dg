@@ -34,7 +34,6 @@ initial_condition = initial_condition_smooth_periodic_wave
 
 volume_flux  = (flux_ec, flux_nonconservative_ec)
 surface_flux = (FluxPlusDissipation(flux_ec, DissipationLocalLaxFriedrichs(Trixi.max_abs_speed)), flux_nonconservative_ec)
-#surface_flux = (FluxPlusDissipation(flux_ec, dissipation_pvm_force), flux_nonconservative_ec)
 
 indicator_var(u, equations) = u[2]^3
 basis = LobattoLegendreBasis(4)
@@ -47,7 +46,6 @@ indicator_sc = IndicatorHennemannGassner(equations, basis,
 volume_integral = VolumeIntegralShockCapturingHG(indicator_sc;
                                                  volume_flux_dg=volume_flux,
                                                  volume_flux_fv=surface_flux,)
-#volume_integral = VolumeIntegralFluxDifferencing(volume_flux)
 
 solver = DGSEM(basis, surface_flux, volume_integral)
 
@@ -75,9 +73,16 @@ ode   = semidiscretize(semi, tspan)
 # Callbacks
 summary_callback = SummaryCallback()
 
+@inline function dwdP(u, equations)
+    w = cons2entropy(u, equations)
+    P = source_term_bottom_friction(u, zero(eltype(u)), zero(eltype(u)), equations)
+
+    return w' * P
+end
+
 analysis_interval  =  10
 analysis_callback  =  AnalysisCallback(semi, interval  =  analysis_interval, save_analysis  =  true,
-                                       extra_analysis_integrals = (entropy,))
+                                       extra_analysis_integrals = (entropy, dwdP))
 alive_callback     =  AliveCallback(analysis_interval  =  analysis_interval)
 save_solution      =  SaveSolutionCallback(interval = 100, save_initial_solution = true, save_final_solution = true)
 stepsize_callback  =  StepsizeCallback(cfl = 0.5)
