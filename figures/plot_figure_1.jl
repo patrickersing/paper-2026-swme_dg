@@ -13,8 +13,8 @@ polydegs = [1, 2, 3, 4]
 # Run examples for different polynomial degrees and save plot data
 for polydeg in polydegs
     trixi_include("../examples/elixir_shallowwater_moments_smooth_wave.jl",
-                   basis = LobattoLegendreBasis(polydeg))
-    
+                  basis = LobattoLegendreBasis(polydeg))
+
     pd = PlotData1D(sol)
     push!(pd_list, pd)
 end
@@ -34,26 +34,38 @@ with_theme(theme_latexfonts()) do
     g_v = f[1, 2] = GridLayout()
     g_a1 = f[2, 1] = GridLayout()
     g_a2 = f[2, 2] = GridLayout()
-    
-    ax_h = Axis(g_h[1,1], xlabel = L"x", ylabel = L"h", xlabelsize = sizelblx, ylabelsize = sizelbly)
-    ax_v = Axis(g_v[1,1], xlabel = L"x", ylabel = L"u_m", xlabelsize = sizelblx, ylabelsize = sizelbly)
-    ax_a1 = Axis(g_a1[1,1], xlabel = L"x", ylabel = L"\alpha_1", xlabelsize = sizelblx, ylabelsize = sizelbly)
-    ax_a2 = Axis(g_a2[1,1], xlabel = L"x", ylabel = L"\alpha_2", xlabelsize = sizelblx, ylabelsize = sizelbly)
+
+    ax_h = Axis(g_h[1, 1], xlabel = L"x", ylabel = L"h", xlabelsize = sizelblx,
+                ylabelsize = sizelbly)
+    ax_v = Axis(g_v[1, 1], xlabel = L"x", ylabel = L"u_m", xlabelsize = sizelblx,
+                ylabelsize = sizelbly)
+    ax_a1 = Axis(g_a1[1, 1], xlabel = L"x", ylabel = L"\alpha_1", xlabelsize = sizelblx,
+                 ylabelsize = sizelbly)
+    ax_a2 = Axis(g_a2[1, 1], xlabel = L"x", ylabel = L"\alpha_2", xlabelsize = sizelblx,
+                 ylabelsize = sizelbly)
 
     # Plot data for polynomial degrees
     for (i, polydeg) in enumerate(polydegs)
         pd = pd_list[i]
-        lines!(ax_h, pd.x, pd.data[:,1], color = colors[i], label=L"P=%$(polydeg)", linewidth = 2)
-        lines!(ax_v, pd.x, pd.data[:,2], color = colors[i], label=L"P=%$(polydeg)", linewidth = 2)
-        lines!(ax_a1, pd.x, pd.data[:,3], color = colors[i], label=L"P=%$(polydeg)", linewidth = 2)
-        lines!(ax_a2, pd.x, pd.data[:,4], color = colors[i], label=L"P=%$(polydeg)", linewidth = 2)
+        lines!(ax_h, pd.x, pd.data[:, 1], color = colors[i], label = L"P=%$(polydeg)",
+               linewidth = 2)
+        lines!(ax_v, pd.x, pd.data[:, 2], color = colors[i], label = L"P=%$(polydeg)",
+               linewidth = 2)
+        lines!(ax_a1, pd.x, pd.data[:, 3], color = colors[i], label = L"P=%$(polydeg)",
+               linewidth = 2)
+        lines!(ax_a2, pd.x, pd.data[:, 4], color = colors[i], label = L"P=%$(polydeg)",
+               linewidth = 2)
     end
 
     # Add reference
-    lines!(ax_h,  pd_ref[:,1], pd_ref[:,2], label = "Ref", color = :black, linestyle = :dash, linewidth = 3)    
-    lines!(ax_v,  pd_ref[:,1], pd_ref[:,3], label = "Ref", color = :black, linestyle = :dash, linewidth = 3)
-    lines!(ax_a1, pd_ref[:,1], pd_ref[:,4], label = "Ref", color = :black, linestyle = :dash, linewidth = 3)
-    lines!(ax_a2, pd_ref[:,1], pd_ref[:,5], label = "Ref", color = :black, linestyle = :dash, linewidth = 3)
+    lines!(ax_h, pd_ref[:, 1], pd_ref[:, 2], label = "Ref", color = :black,
+           linestyle = :dash, linewidth = 3)
+    lines!(ax_v, pd_ref[:, 1], pd_ref[:, 3], label = "Ref", color = :black,
+           linestyle = :dash, linewidth = 3)
+    lines!(ax_a1, pd_ref[:, 1], pd_ref[:, 4], label = "Ref", color = :black,
+           linestyle = :dash, linewidth = 3)
+    lines!(ax_a2, pd_ref[:, 1], pd_ref[:, 5], label = "Ref", color = :black,
+           linestyle = :dash, linewidth = 3)
 
     # Reset xlimits for all axes
     for ax in (ax_h, ax_v, ax_a1, ax_a2)
@@ -63,11 +75,13 @@ with_theme(theme_latexfonts()) do
     end
 
     # Add legend
-    legend = Legend(f[3,1:2], 
-        [[LineElement(linestyle = :solid, color = colors[i], linewidth = 2) for i in 1:length(polydegs)]...,
-         LineElement(linestyle = :dash, color = :black, linewidth = 3)],
-         [[L"P=%$(polydeg)" for polydeg in polydegs]..., "Ref"],
-         labelsize = 18)
+    legend = Legend(f[3, 1:2],
+                    [
+                        [LineElement(linestyle = :solid, color = colors[i], linewidth = 2)
+                         for i in 1:length(polydegs)]...,
+                        LineElement(linestyle = :dash, color = :black, linewidth = 3)],
+                    [[L"P=%$(polydeg)" for polydeg in polydegs]..., "Ref"],
+                    labelsize = 18)
 
     legend.orientation = :horizontal
 

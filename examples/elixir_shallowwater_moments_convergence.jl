@@ -77,7 +77,9 @@ initial_condition = initial_condition_convergence
 ###############################################################################
 # Get the DG approximation space
 volume_flux = (flux_ec, flux_nonconservative_ec)
-surface_flux = (FluxPlusDissipation(flux_ec, DissipationLaxFriedrichsEntropyVariables(max_abs_speed)), flux_nonconservative_ec)
+surface_flux = (FluxPlusDissipation(flux_ec,
+                                    DissipationLaxFriedrichsEntropyVariables(max_abs_speed)),
+                flux_nonconservative_ec)
 
 solver = DGSEM(polydeg = 3,
                surface_flux = surface_flux,

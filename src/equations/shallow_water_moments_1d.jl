@@ -39,11 +39,11 @@ struct ShallowWaterMomentEquations1D{NVARS, NMOMENTS, RealT <: Real} <:
                                                                    lambda::RealT,
                                                                    rho::RealT,
                                                                    nman::RealT) where {
-                                                                                            NVARS,
-                                                                                            NMOMENTS,
-                                                                                            RealT <:
-                                                                                            Real
-                                                                                            }
+                                                                                       NVARS,
+                                                                                       NMOMENTS,
+                                                                                       RealT <:
+                                                                                       Real
+                                                                                       }
         new(gravity, H0, n_moments, A, B, C, nu, lambda, rho, nman)
     end
 end
@@ -52,7 +52,9 @@ end
 # depending on the application. Here `gravity=1.0` or `gravity=9.81` are common values for the
 # gravitational acceleration. The reference total water height H0 defaults to 0.0 but is used for 
 # the "lake-at-rest" well-balancedness test cases.
-function ShallowWaterMomentEquations1D(; gravity, H0 = zero(gravity), n_moments, nu = 0.1, lambda = 0.1, rho = 1000.0, nman = 0.0165)
+function ShallowWaterMomentEquations1D(; gravity, H0 = zero(gravity), n_moments,
+                                       nu = 0.1, lambda = 0.1, rho = 1000.0,
+                                       nman = 0.0165)
     RealT = promote_type(typeof(gravity), typeof(H0))
 
     # Extract number of moments and variables
@@ -109,50 +111,57 @@ end
 #   Steady states and well-balanced schemes for shallow water moment equations with topography
 #   [DOI: 10.1016/j.amc.2022.127166](https://doi.org/10.1016/j.amc.2022.127166)
 # """
-@inline function TrixiShallowWater.source_term_bottom_friction(u, x, t, equations::Union{ShallowWaterMomentEquations1D, ShallowWaterLinearizedMomentEquations1D}) 
+@inline function TrixiShallowWater.source_term_bottom_friction(u, x, t,
+                                                               equations::Union{ShallowWaterMomentEquations1D,
+                                                                                ShallowWaterLinearizedMomentEquations1D})
     # Get waterheight, velocity and moments
     h = waterheight(u, equations)
     v = velocity(u, equations)
-    a = moments(u, equations)/h
-    
+    a = moments(u, equations) / h
+
     sum_a = sum(a)
-    
-    friction_v = - equations.nu/equations.lambda * (v + sum_a)
-    
+
+    friction_v = -equations.nu / equations.lambda * (v + sum_a)
+
     friction_mom = MVector{nmoments(equations), real(equations)}(undef)
-    
+
     for i in eachmoment(equations)
-        friction_mom[i] = - (2 * i + 1) * equations.nu/equations.lambda * (v + sum_a)
+        friction_mom[i] = -(2 * i + 1) * equations.nu / equations.lambda * (v + sum_a)
         for j in eachmoment(equations)
-            friction_mom[i] += - equations.nu/h * equations.C[i, j] * a[j] 
+            friction_mom[i] += -equations.nu / h * equations.C[i, j] * a[j]
         end
     end
-        
+
     return SVector(0, friction_v, friction_mom..., 0)
 end
 
 # Introduce Manning friction source term
-@inline function source_term_manning_friction(u, x, t, equations::Union{ShallowWaterMomentEquations1D, ShallowWaterLinearizedMomentEquations1D}) 
+@inline function source_term_manning_friction(u, x, t,
+                                              equations::Union{ShallowWaterMomentEquations1D,
+                                                               ShallowWaterLinearizedMomentEquations1D})
     # Get waterheight, velocity and moments
     h = waterheight(u, equations)
     v = velocity(u, equations)
-    a = moments(u, equations) /h
-    
+    a = moments(u, equations) / h
+
     sum_a = sum(a)
 
-    friction_v = - equations.rho*equations.gravity * ((equations.nman^2)/h^(1/3)) * (v + sum_a) * abs(v + sum_a)
-    
+    friction_v = -equations.rho * equations.gravity * ((equations.nman^2) / h^(1 / 3)) *
+                 (v + sum_a) * abs(v + sum_a)
+
     friction_mom = MVector{nmoments(equations), real(equations)}(undef)
-    
+
     for i in eachmoment(equations)
-        friction_mom[i] = - (2 * i + 1) * equations.rho*equations.gravity *  ((equations.nman^2)/h^(1/3)) * (v + sum_a) * abs(v + sum_a)
+        friction_mom[i] = -(2 * i + 1) * equations.rho * equations.gravity *
+                          ((equations.nman^2) / h^(1 / 3)) * (v + sum_a) *
+                          abs(v + sum_a)
         for j in eachmoment(equations)
-            friction_mom[i] += - equations.nu/h * equations.C[i, j] * a[j] 
+            friction_mom[i] += -equations.nu / h * equations.C[i, j] * a[j]
         end
     end
-        
+
     return SVector(0, friction_v, friction_mom..., 0)
-end  
+end
 
 """
     boundary_condition_slip_wall(u_inner, orientation_or_normal, x, t, surface_flux_function,
@@ -369,21 +378,30 @@ end
     # Compute the matrix H = du/dw at the average state
     h_avg = 0.5 * (u_ll[1] + u_rr[1])
     v_avg = 0.5 * (Trixi.velocity(u_ll, equations) + Trixi.velocity(u_rr, equations))
-    a_avg = SVector(0.5 * (moments(u_ll, equations) / u_ll[1] + moments(u_rr, equations) / u_rr[1]))
+    a_avg = SVector(0.5 * (moments(u_ll, equations) / u_ll[1] +
+                     moments(u_rr, equations) / u_rr[1]))
     g = equations.gravity
- 
+
     # Construct the H matrix from H = yy' + Iz
     y = SVector{nmoments(equations) + 2, real(equations)}(1, v_avg, a_avg...)
     z = SVector{nmoments(equations) + 2, real(equations)}(ntuple(k -> k == 1 ? 0 :
-                                                            k == 2 ? g*h_avg :
-                                                            (2k-3)*g*h_avg,
-                                                            nmoments(equations) + 2))
+                                                                      k == 2 ?
+                                                                      g * h_avg :
+                                                                      (2k - 3) * g *
+                                                                      h_avg,
+                                                                 nmoments(equations) +
+                                                                 2))
 
-    H = SMatrix{nmoments(equations) + 2, nmoments(equations) + 2, real(equations)}(1/g*(y*y' + diagm(z))) 
+    H = SMatrix{nmoments(equations) + 2, nmoments(equations) + 2, real(equations)}(1 /
+                                                                                   g *
+                                                                                   (y *
+                                                                                    y' +
+                                                                                    diagm(z)))
 
     diss = SVector{nmoments(equations) + 2, real(equations)}(-0.5 .* λ .* (H * w_jump))
 
-    return SVector{nmoments(equations) + 3, real(equations)}(diss..., zero(eltype(u_ll)))
+    return SVector{nmoments(equations) + 3, real(equations)}(diss...,
+                                                             zero(eltype(u_ll)))
 end
 
 # The eigenvalues are approximate with those of the SWLME taken from:
@@ -536,18 +554,23 @@ end
 end
 
 # Entropy dissipation due to friction source terms
-@inline function dwdP_Ns(u, equations::Union{ShallowWaterMomentEquations1D, ShallowWaterLinearizedMomentEquations1D})
+@inline function dwdP_Ns(u,
+                         equations::Union{ShallowWaterMomentEquations1D,
+                                          ShallowWaterLinearizedMomentEquations1D})
     w = cons2entropy(u, equations)
-    P = source_term_bottom_friction(u, zero(real(equations)), zero(real(equations)), equations)
+    P = source_term_bottom_friction(u, zero(real(equations)), zero(real(equations)),
+                                    equations)
     return w' * P
 end
 
-@inline function dwdP_MM(u, equations::Union{ShallowWaterMomentEquations1D, ShallowWaterLinearizedMomentEquations1D})
+@inline function dwdP_MM(u,
+                         equations::Union{ShallowWaterMomentEquations1D,
+                                          ShallowWaterLinearizedMomentEquations1D})
     w = cons2entropy(u, equations)
-    P = source_term_manning_friction(u, zero(real(equations)), zero(real(equations)), equations)
+    P = source_term_manning_friction(u, zero(real(equations)), zero(real(equations)),
+                                     equations)
     return w' * P
 end
-
 
 # Routines for PVM dissipation (Experimental)
 ####################################################################################################
@@ -557,39 +580,46 @@ end
     a = moments(u, equations) / h
     g = equations.gravity
 
-    A = zero(MArray{Tuple{nmoments(equations) + 3, nmoments(equations) + 3}, real(equations)})
+    A = zero(MArray{Tuple{nmoments(equations) + 3, nmoments(equations) + 3},
+                    real(equations)})
 
-    A[1, 3:nmoments(equations) + 2] .= 0
+    A[1, 3:(nmoments(equations) + 2)] .= 0
 
     A[2, 1] = g * h - v^2 - sum(a[i]^2 / (2i + 1) for i in eachmoment(equations))
     A[2, 2] = 2 * v
     for i in eachmoment(equations)
-        A[2, i+2] = 2 * a[i] / (2 * i + 1)
+        A[2, i + 2] = 2 * a[i] / (2 * i + 1)
     end
 
     for i in eachmoment(equations)
-        A[i+2, 1] = - 2 * v * a[i] - sum([equations.A[i,j,k] * a[j] * a[k] for j in eachmoment(equations), k in eachmoment(equations)])
-        A[i+2, 2] = 2 * a[i]
+        A[i + 2, 1] = -2 * v * a[i] - sum([equations.A[i, j, k] * a[j] * a[k]
+                           for j in eachmoment(equations), k in eachmoment(equations)])
+        A[i + 2, 2] = 2 * a[i]
         for j in eachmoment(equations)
-            A[i+2, j+2] = 2 * v + (sum([equations.A[i,j,k] * a[k] for k in eachmoment(equations)]) +
-                                   sum([equations.A[i,k,j] * a[k] for k in eachmoment(equations)]))
+            A[i + 2, j + 2] = 2 * v + (sum([equations.A[i, j, k] * a[k]
+                                    for k in eachmoment(equations)]) +
+                               sum([equations.A[i, k, j] * a[k]
+                                    for k in eachmoment(equations)]))
         end
     end
 
-    B = zero(MArray{Tuple{nmoments(equations) + 3, nmoments(equations) + 3}, real(equations)})
+    B = zero(MArray{Tuple{nmoments(equations) + 3, nmoments(equations) + 3},
+                    real(equations)})
 
     B[2, 1] = g * h
     B[2, end] = g * h
     for i in eachmoment(equations)
         for j in eachmoment(equations)
-            B[i+2, j+2] = - v + sum([equations.B[i, j, k] * a[k] for k in eachmoment(equations)])
+            B[i + 2, j + 2] = -v + sum([equations.B[i, j, k] * a[k]
+                                   for k in eachmoment(equations)])
         end
     end
 
     return SMatrix(A + B)
 end
 
-@inline function dissipation_pvm_force(u_ll, u_rr, orientation, equations::ShallowWaterMomentEquations1D)
+@inline function dissipation_pvm_force(u_ll, u_rr, orientation,
+                                       equations::ShallowWaterMomentEquations1D)
     S0 = max_abs_speed(u_ll, u_rr, 1, equations)
 
     # Compute coefficiients for the polynomial viscosity matrix
@@ -610,5 +640,4 @@ end
     end
     return SVector{nmoments(equations) + 3, real(equations)}(dissipation)
 end
-
 end # @muladd

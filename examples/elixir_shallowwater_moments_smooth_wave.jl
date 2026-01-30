@@ -14,14 +14,16 @@ equations = ShallowWaterMomentEquations1D(gravity = 1.0, H0 = 0.0, n_moments = 2
 #   Julian Koellermeier and Marvin Rominger (2020)
 #   "Analysis and Numerical Simulation of Hyperbolic Shallow Water Moment Equations"
 #   [DOI: 10.4208/cicp.OA-2019-0065](https://doi.org/10.4208/cicp.OA-2019-0065)
-function initial_condition_smooth_periodic_wave(x, t, equations::Union{ShallowWaterMomentEquations1D, ShallowWaterLinearizedMomentEquations1D})
+function initial_condition_smooth_periodic_wave(x, t,
+                                                equations::Union{ShallowWaterMomentEquations1D,
+                                                                 ShallowWaterLinearizedMomentEquations1D})
 
     # Case JK 2020:
-    H    = 1.0 + exp(3.0 * cos( π * (x[1] + 0.5)) )/exp(4.0)      
-    v    = 0.25    
-    a    = zeros(equations.n_moments)
+    H = 1.0 + exp(3.0 * cos(π * (x[1] + 0.5))) / exp(4.0)
+    v = 0.25
+    a = zeros(equations.n_moments)
     a[2] = -0.25
-    
+
     b = 0.0
 
     return prim2cons(SVector(H, v, a..., b), equations)
@@ -32,21 +34,23 @@ initial_condition = initial_condition_smooth_periodic_wave
 ###############################################################################
 # Get the DG approximation space
 
-volume_flux  = (flux_ec, flux_nonconservative_ec)
-surface_flux = (FluxPlusDissipation(flux_ec, DissipationLaxFriedrichsEntropyVariables(Trixi.max_abs_speed)), flux_nonconservative_ec)
+volume_flux = (flux_ec, flux_nonconservative_ec)
+surface_flux = (FluxPlusDissipation(flux_ec,
+                                    DissipationLaxFriedrichsEntropyVariables(Trixi.max_abs_speed)),
+                flux_nonconservative_ec)
 
 indicator_var(u, equations) = u[2]^3
 
 basis = LobattoLegendreBasis(2)
 indicator_sc = IndicatorHennemannGassner(equations, basis,
-                                         alpha_max=0.5,
-                                         alpha_min=0.001,
-                                         alpha_smooth=true,
-                                         variable=indicator_var)
+                                         alpha_max = 0.5,
+                                         alpha_min = 0.001,
+                                         alpha_smooth = true,
+                                         variable = indicator_var)
 
 volume_integral = VolumeIntegralShockCapturingHG(indicator_sc;
-                                                 volume_flux_dg=volume_flux,
-                                                 volume_flux_fv=surface_flux,)
+                                                 volume_flux_dg = volume_flux,
+                                                 volume_flux_fv = surface_flux,)
 
 solver = DGSEM(basis, surface_flux, volume_integral)
 
@@ -54,35 +58,39 @@ solver = DGSEM(basis, surface_flux, volume_integral)
 # Create the TreeMesh for the domain [-1, 1]
 
 coordinates_min = -1.0
-coordinates_max =  1.0
+coordinates_max = 1.0
 
 mesh = TreeMesh(coordinates_min,
                 coordinates_max,
                 initial_refinement_level = 8, # 2^refinement_level
                 n_cells_max = 10_000,
-                periodicity = true)           
+                periodicity = true)
 
 # create the semi discretization object
 source_term = source_term_bottom_friction
-semi = SemidiscretizationHyperbolic(mesh, equations, initial_condition, solver,  source_terms = source_term)
+semi = SemidiscretizationHyperbolic(mesh, equations, initial_condition, solver,
+                                    source_terms = source_term)
 
 ###############################################################################
 # ODE solver
 tspan = (0.0, 2.0)
-ode   = semidiscretize(semi, tspan)
+ode = semidiscretize(semi, tspan)
 
 ###############################################################################
 # Callbacks
 summary_callback = SummaryCallback()
 
-analysis_interval  =  10
-analysis_callback  =  AnalysisCallback(semi, interval  =  analysis_interval, save_analysis  =  true,
-                                       extra_analysis_integrals = (entropy,))
-alive_callback     =  AliveCallback(analysis_interval  =  analysis_interval)
-save_solution      =  SaveSolutionCallback(interval = 200, save_initial_solution = true, save_final_solution = true)
-stepsize_callback  =  StepsizeCallback(cfl = 0.9)
+analysis_interval = 10
+analysis_callback = AnalysisCallback(semi, interval = analysis_interval,
+                                     save_analysis = true,
+                                     extra_analysis_integrals = (entropy,))
+alive_callback = AliveCallback(analysis_interval = analysis_interval)
+save_solution = SaveSolutionCallback(interval = 200, save_initial_solution = true,
+                                     save_final_solution = true)
+stepsize_callback = StepsizeCallback(cfl = 0.9)
 
-callbacks = CallbackSet(summary_callback,  analysis_callback,  alive_callback,  save_solution,  stepsize_callback)
+callbacks = CallbackSet(summary_callback, analysis_callback, alive_callback, save_solution,
+                        stepsize_callback)
 ###############################################################################
 # run the simulation
 

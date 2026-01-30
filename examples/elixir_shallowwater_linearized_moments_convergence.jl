@@ -26,17 +26,18 @@ H = 7 + cos(sqrt(2) * 2 * pi * x_sym[1]) * cos(2 * pi * t_sym)
 v = 0.5
 b = 2 + 0.5 * sinpi(sqrt(2) * x_sym[1])
 h = H - b
-a = [1 for i in 1:equations.n_moments]
+a = [1 for i in 1:(equations.n_moments)]
 
 init = [H, v, a..., b]
 
 ## PDE
 ###############################################################################
 # precompute the sum term
-sum_moments = sum(h * a[j]^2 / (2j + 1) for j in 1:equations.n_moments)
+sum_moments = sum(h * a[j]^2 / (2j + 1) for j in 1:(equations.n_moments))
 
 # additional moment equations 
-mom_eqs = [Dt(h * a[i]) + Dx(2 * h * v * a[i]) - v * Dx(h * a[i]) for i in 1:equations.n_moments]
+mom_eqs = [Dt(h * a[i]) + Dx(2 * h * v * a[i]) - v * Dx(h * a[i])
+           for i in 1:(equations.n_moments)]
 
 # PDE Source Terms
 eqs = [
@@ -77,7 +78,9 @@ initial_condition = initial_condition_convergence
 ###############################################################################
 # Get the DG approximation space
 volume_flux = (flux_ec, flux_nonconservative_ec)
-surface_flux = (FluxPlusDissipation(flux_ec, DissipationLaxFriedrichsEntropyVariables(max_abs_speed)), flux_nonconservative_ec)
+surface_flux = (FluxPlusDissipation(flux_ec,
+                                    DissipationLaxFriedrichsEntropyVariables(max_abs_speed)),
+                flux_nonconservative_ec)
 solver = DGSEM(polydeg = 3,
                surface_flux = surface_flux,
                volume_integral = VolumeIntegralFluxDifferencing(volume_flux))
@@ -128,4 +131,3 @@ sol = solve(ode,
             dt = 1e-5,
             ode_default_options()...,
             callback = callbacks,);
-

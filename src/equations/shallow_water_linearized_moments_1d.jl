@@ -25,16 +25,17 @@ struct ShallowWaterLinearizedMomentEquations1D{NVARS, NMOMENTS, RealT <: Real} <
                                                                              H0::RealT,
                                                                              n_moments::Integer,
                                                                              C::SArray{Tuple{NMOMENTS,
-                                                                                             NMOMENTS}, RealT},
+                                                                                             NMOMENTS},
+                                                                                       RealT},
                                                                              nu::RealT,
                                                                              lambda::RealT,
                                                                              rho::RealT,
                                                                              nman::RealT) where {
-                                                                                                NVARS,
-                                                                                                NMOMENTS,
-                                                                                                RealT <:
-                                                                                                Real
-                                                                                                }
+                                                                                                 NVARS,
+                                                                                                 NMOMENTS,
+                                                                                                 RealT <:
+                                                                                                 Real
+                                                                                                 }
         new(gravity, H0, n_moments, C, nu, lambda, rho, nman)
     end
 end
