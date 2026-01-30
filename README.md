@@ -20,12 +20,40 @@ To reproduce the results in the paper start a new `Julia` session with the `--pr
 julia --project=. --threads=N
 ```
 
-Then execute the following commands to run e.g. "elixir_shallowwater_linearized_moments_shock_capturing.jl":
-```julia
-include("examples/elixir_shallowwater_linearized_moments_shock_capturing.jl")
+Then execute the following commands in the Julia-REPL to create the respective results:
+
+- **Figure 1**
+The following command will create Figure 1 and save it as a `.pdf`
+```julia 
+include("/figures/plot_figure_1.jl")
 ```
-To visualize the results with Plots.jl run
-```julia
-using Plots
-plot(sol)
+
+- **Figure 2**
+The following command will create Figure 2 and save it as a `.pdf`
+```julia 
+include("/figures/plot_figure_2.jl")
 ```
+
+- **Figure 3**
+The following command will create Figure 3 and save it as a `.pdf`
+```julia 
+include("/figures/plot_figure_3.jl")
+```
+
+- **Figure 4 & 5**
+The following command will create Figures 4 & 5 and and save them as a `.pdf`
+```julia 
+include("/figures/plot_figure_4.jl")
+```
+
+- **Table 1 & 2**
+The following command will print the convergence results for Table 1 to the Julia-REPL
+```julia
+using Trixi
+convergence_test("/examples/elixir_shallowwater_moments_convergence.jl", 5)
+convergence_test("/examples/elixir_shallowwater_linearized_moments_convergence.jl", 5)
+```
+
+## Authors
+- [Patrick Ersing](https://liu.se/en/employee/pater53) (Linköping University, Sweden)
+- [Julio Cesar Careaga Solis](https://www.rug.nl/staff/j.c.careaga.solis/?lang=en) (University of Groningen, Netherlands)

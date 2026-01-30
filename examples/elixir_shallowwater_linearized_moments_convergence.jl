@@ -9,7 +9,7 @@ include("../src/main.jl")
 # Semidiscretization of the shallow water linearized moment equations to test convergence against a 
 # manufactured solution.
 
-equations = ShallowWaterLinearizedMomentEquations1D(gravity = 9.81, n_moments = 3)
+equations = ShallowWaterLinearizedMomentEquations1D(gravity = 9.81, n_moments = 2)
 
 ### Create manufactured solution for method of manufactured solutions (MMS)
 
