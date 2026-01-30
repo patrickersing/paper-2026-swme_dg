@@ -1,7 +1,7 @@
 using Trixi
 using TrixiShallowWater
 using Static: True, False
-using StaticArrays: SVector, MVector, @SMatrix, MArray, SArray
+using StaticArrays: SVector, MVector, @SMatrix, SMatrix, MArray, SArray
 using MuladdMacro: @muladd
 using LinearAlgebra: diagm
 

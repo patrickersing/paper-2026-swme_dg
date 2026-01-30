@@ -15,18 +15,27 @@ struct ShallowWaterLinearizedMomentEquations1D{NVARS, NMOMENTS, RealT <: Real} <
     H0::RealT        # constant "lake-at-rest" total water height
     n_moments::Integer  # number of moments
     C::SArray{Tuple{NMOMENTS, NMOMENTS}, RealT} # Moment matrix for friction term
+    # Friction related quantities
+    nu::RealT       # kinematic viscosity
+    lambda::RealT  # slip length
+    rho::RealT    # fluid density (relevant for Manning friction)
+    nman::RealT   # Manning roughness coefficient
 
     function ShallowWaterLinearizedMomentEquations1D{NVARS, NMOMENTS, RealT}(gravity::RealT,
                                                                              H0::RealT,
                                                                              n_moments::Integer,
                                                                              C::SArray{Tuple{NMOMENTS,
-                                                                                             NMOMENTS}, RealT}) where {
-                                                                                                        NVARS,
-                                                                                                        NMOMENTS,
-                                                                                                        RealT <:
-                                                                                                        Real
-                                                                                                        }
-        new(gravity, H0, n_moments, C)
+                                                                                             NMOMENTS}, RealT},
+                                                                             nu::RealT,
+                                                                             lambda::RealT,
+                                                                             rho::RealT,
+                                                                             nman::RealT) where {
+                                                                                                NVARS,
+                                                                                                NMOMENTS,
+                                                                                                RealT <:
+                                                                                                Real
+                                                                                                }
+        new(gravity, H0, n_moments, C, nu, lambda, rho, nman)
     end
 end
 
@@ -37,7 +46,11 @@ end
 function ShallowWaterLinearizedMomentEquations1D(;
                                                  gravity,
                                                  H0 = zero(gravity),
-                                                 n_moments,)
+                                                 n_moments,
+                                                 nu = 0.1,
+                                                 lambda = 0.1,
+                                                 rho = 1000.0,
+                                                 nman = 0.0165)
     RealT = promote_type(typeof(gravity), typeof(H0))
 
     # Extract number of layers and variables
@@ -49,7 +62,11 @@ function ShallowWaterLinearizedMomentEquations1D(;
     return ShallowWaterLinearizedMomentEquations1D{NVARS, NMOMENTS, RealT}(gravity,
                                                                            H0,
                                                                            n_moments,
-                                                                           C)
+                                                                           C,
+                                                                           nu,
+                                                                           lambda,
+                                                                           rho,
+                                                                           nman)
 end
 
 @inline function Base.real(::ShallowWaterLinearizedMomentEquations1D{NVARS, NMOMENTS,

@@ -18,6 +18,11 @@ struct ShallowWaterMomentEquations1D{NVARS, NMOMENTS, RealT <: Real} <:
     A::SArray{Tuple{NMOMENTS, NMOMENTS, NMOMENTS}, RealT}
     B::SArray{Tuple{NMOMENTS, NMOMENTS, NMOMENTS}, RealT}
     C::SArray{Tuple{NMOMENTS, NMOMENTS}, RealT}
+    # Friction related quantities
+    nu::RealT       # kinematic viscosity
+    lambda::RealT  # slip length
+    rho::RealT    # fluid density (relevant for Manning friction)
+    nman::RealT   # Manning roughness coefficient
 
     function ShallowWaterMomentEquations1D{NVARS, NMOMENTS, RealT}(gravity::RealT,
                                                                    H0::RealT,
@@ -29,13 +34,17 @@ struct ShallowWaterMomentEquations1D{NVARS, NMOMENTS, RealT <: Real} <:
                                                                              RealT},
                                                                    C::SArray{Tuple{NMOMENTS,
                                                                                    NMOMENTS},
-                                                                             RealT}) where {
+                                                                             RealT},
+                                                                   nu::RealT,
+                                                                   lambda::RealT,
+                                                                   rho::RealT,
+                                                                   nman::RealT) where {
                                                                                             NVARS,
                                                                                             NMOMENTS,
                                                                                             RealT <:
                                                                                             Real
                                                                                             }
-        new(gravity, H0, n_moments, A, B, C)
+        new(gravity, H0, n_moments, A, B, C, nu, lambda, rho, nman)
     end
 end
 
@@ -43,7 +52,7 @@ end
 # depending on the application. Here `gravity=1.0` or `gravity=9.81` are common values for the
 # gravitational acceleration. The reference total water height H0 defaults to 0.0 but is used for 
 # the "lake-at-rest" well-balancedness test cases.
-function ShallowWaterMomentEquations1D(; gravity, H0 = zero(gravity), n_moments)
+function ShallowWaterMomentEquations1D(; gravity, H0 = zero(gravity), n_moments, nu = 0.1, lambda = 0.1, rho = 1000.0, nman = 0.0165)
     RealT = promote_type(typeof(gravity), typeof(H0))
 
     # Extract number of moments and variables
@@ -60,7 +69,11 @@ function ShallowWaterMomentEquations1D(; gravity, H0 = zero(gravity), n_moments)
                                                                  n_moments,
                                                                  A,
                                                                  B,
-                                                                 C)
+                                                                 C,
+                                                                 nu,
+                                                                 lambda,
+                                                                 rho,
+                                                                 nman)
 end
 
 @inline function Base.real(::ShallowWaterMomentEquations1D{NVARS, NMOMENTS, RealT}) where {
@@ -100,26 +113,46 @@ end
     # Get waterheight, velocity and moments
     h = waterheight(u, equations)
     v = velocity(u, equations)
-    a = moments(u, equations)
-     
+    a = moments(u, equations)/h
+    
     sum_a = sum(a)
-
-    nu     = 0.1
-    lambda = 0.1
-       
-    friction_v = - nu/lambda * (v + sum_a)
+    
+    friction_v = - equations.nu/equations.lambda * (v + sum_a)
     
     friction_mom = MVector{nmoments(equations), real(equations)}(undef)
     
     for i in eachmoment(equations)
-        friction_mom[i] = - (2 * i + 1) * nu/lambda * (v + sum_a)
+        friction_mom[i] = - (2 * i + 1) * equations.nu/equations.lambda * (v + sum_a)
         for j in eachmoment(equations)
-            friction_mom[i] += - nu/h * equations.C[i, j] * a[j] 
+            friction_mom[i] += - equations.nu/h * equations.C[i, j] * a[j] 
         end
     end
         
     return SVector(0, friction_v, friction_mom..., 0)
 end
+
+# Introduce Manning friction source term
+@inline function source_term_manning_friction(u, x, t, equations::Union{ShallowWaterMomentEquations1D, ShallowWaterLinearizedMomentEquations1D}) 
+    # Get waterheight, velocity and moments
+    h = waterheight(u, equations)
+    v = velocity(u, equations)
+    a = moments(u, equations) /h
+    
+    sum_a = sum(a)
+
+    friction_v = - equations.rho*equations.gravity * ((equations.nman^2)/h^(1/3)) * (v + sum_a) * abs(v + sum_a)
+    
+    friction_mom = MVector{nmoments(equations), real(equations)}(undef)
+    
+    for i in eachmoment(equations)
+        friction_mom[i] = - (2 * i + 1) * equations.rho*equations.gravity *  ((equations.nman^2)/h^(1/3)) * (v + sum_a) * abs(v + sum_a)
+        for j in eachmoment(equations)
+            friction_mom[i] += - equations.nu/h * equations.C[i, j] * a[j] 
+        end
+    end
+        
+    return SVector(0, friction_v, friction_mom..., 0)
+end  
 
 """
     boundary_condition_slip_wall(u_inner, orientation_or_normal, x, t, surface_flux_function,
@@ -431,7 +464,6 @@ end
 end
 
 # Convert conservative variables to entropy variables
-# The last entry still just carries the bottom topography values for convenience
 @inline function Trixi.cons2entropy(u, equations::ShallowWaterMomentEquations1D)
     # Extract conservative variables and compute velocity
     h = waterheight(u, equations)
@@ -501,6 +533,19 @@ end
     b = u[end]
 
     return abs(equations.H0 - (h + b))
+end
+
+# Entropy dissipation due to friction source terms
+@inline function dwdP_Ns(u, equations::Union{ShallowWaterMomentEquations1D, ShallowWaterLinearizedMomentEquations1D})
+    w = cons2entropy(u, equations)
+    P = source_term_bottom_friction(u, zero(real(equations)), zero(real(equations)), equations)
+    return w' * P
+end
+
+@inline function dwdP_MM(u, equations::Union{ShallowWaterMomentEquations1D, ShallowWaterLinearizedMomentEquations1D})
+    w = cons2entropy(u, equations)
+    P = source_term_manning_friction(u, zero(real(equations)), zero(real(equations)), equations)
+    return w' * P
 end
 
 
