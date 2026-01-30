@@ -91,25 +91,22 @@ end
 ## Figure for entropy over time and well-balanced error
 with_theme(theme_latexfonts()) do
     f = Figure(size = (700, 300))
-    ax_left = Axis(f[1, 1], xlabel = "Time",
-                   ylabel = L"\frac{1}{|\Omega|}\int_{\Omega} \mathbb{E}(t) \,\text{d}x",
-                   xlabelsize = sizelblx, ylabelsize = sizelbly)
-    ax_right = Axis(f[1, 2], xlabel = "Time",
-                    ylabel = L"\frac{1}{|\Omega|}\int_{\Omega} |h(t) - h(0)| \,\text{d}x",
-                    xlabelsize = sizelblx, ylabelsize = sizelbly)
+    ax_left = Axis(f[1, 1], xlabel = "t",
+                   ylabel = L"\frac{1}{|\Omega|}\int_{\Omega} \mathbb{E}(t) \,\text{d}x", xlabelsize = 20, ylabelsize = 15,)
+    ax_right = Axis(f[1, 2], xlabel = "t",
+                    ylabel = L"\frac{1}{|\Omega|}\int_{\Omega} |h(t) - h(0)| \,\text{d}x", xlabelsize = 20,ylabelsize = 15,)
 
     # Plot entropy on left axis
-    label_wb = lines!(ax_left, df_wb.time, df_wb.entropy)
-    label_nwb = lines!(ax_left, df_nwb.time, df_nwb.entropy)
+    label_wb = lines!(ax_left, df_wb.time, df_wb.entropy, linewidth = 2)
+    label_nwb = lines!(ax_left, df_nwb.time, df_nwb.entropy, linewidth = 2)
 
     # Plot well-balanced error on right axis
-    lines!(ax_right, df_wb.time, df_wb.var"|H0-(h+b)|")
-    lines!(ax_right, df_nwb.time, df_nwb.var"|H0-(h+b)|")
+    lines!(ax_right, df_wb.time, df_wb.var"|H0-(h+b)|", linewidth = 2)
+    lines!(ax_right, df_nwb.time, df_nwb.var"|H0-(h+b)|", linewidth = 2)
 
     legend = Legend(f[2, 1:2],
                     [label_wb, label_nwb],
-                    ["WB", "NWB"],
-                    labelsize = 18)
+                    ["WB", "NWB"])
 
     # Reset xlimits for all axes
     for ax in (ax_left, ax_right)
