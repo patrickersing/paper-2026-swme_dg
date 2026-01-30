@@ -77,7 +77,7 @@ initial_condition = initial_condition_convergence
 ###############################################################################
 # Get the DG approximation space
 volume_flux = (flux_ec, flux_nonconservative_ec)
-surface_flux = (flux_ec, flux_nonconservative_ec)
+surface_flux = (FluxPlusDissipation(flux_ec, DissipationLaxFriedrichsEntropyVariables(max_abs_speed)), flux_nonconservative_ec)
 
 solver = DGSEM(polydeg = 3,
                surface_flux = surface_flux,
@@ -90,7 +90,7 @@ coordinates_min = 0.0
 coordinates_max = sqrt(2.0)
 mesh = TreeMesh(coordinates_min,
                 coordinates_max,
-                initial_refinement_level = 4,
+                initial_refinement_level = 6,
                 n_cells_max = 10_000,
                 periodicity = true)
 
@@ -104,7 +104,7 @@ semi = SemidiscretizationHyperbolic(mesh,
 ###############################################################################
 # ODE solvers, callbacks etc.
 
-tspan = (0.0, 1.0)
+tspan = (0.0, 0.05)
 ode = semidiscretize(semi, tspan)
 
 summary_callback = SummaryCallback()
@@ -123,10 +123,9 @@ callbacks = CallbackSet(summary_callback, analysis_callback, alive_callback, sav
 ###############################################################################
 # run the simulation
 
-# use a Runge-Kutta method with automatic (error based) time step size control
+# use a Runge-Kutta method fixed step size
 sol = solve(ode,
-            RDPK3SpFSAL49();
-            abstol = 1.0e-8,
-            reltol = 1.0e-8,
+            CarpenterKennedy2N54(williamson_condition = false);
+            dt = 1e-5,
             ode_default_options()...,
             callback = callbacks,);

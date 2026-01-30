@@ -1,0 +1,30 @@
+3     ! Model type 
+4      ! total number of unknowns
+2      ! number of moments
+0      ! Moms out, in post processing 
+2.0    ! end time
+1.0    ! gravity
+0.1    ! nu
+0.1    ! lambda
+2500    ! number of elements X
+1      ! number of elements Y (not in effect in 1D)
+-1.0    ! = Left   limit x interval
+1.0    ! = Right  limit x interval
+0.0    ! = Bottom limit y interval
+1.0    ! = Top    limit y interval
+1      ! boundary condition Left
+1      ! boundary condition Right
+1      ! boundary condition Bottom
+1      ! boundary condition Top
+0      ! BathymetryFlag: (0) None, (1) (2) (3) Gaussian, (4) Curved bottom
+16      ! Initial condition
+1      ! Reconstruction: (1) 1st Order,  TO FIX/ADAPT: (2) MUSCL, (3) WENO3, (4) WENO5 
+1      ! Time approx:    (1) Expl Euler, (2) SSPRK4, (3) RK65,  (4) DeC5
+4      ! WhichOutput:    (1) Octave,     (2) Tecplot, (3) Octave & Tecplot, (4) Matrix
+10     ! number of output files
+0.5    ! CFL factor
+1      ! Non Conservative scheme:    (1) PVM, (2) Eigen Value method
+4      ! Viscosity matrix (for PVM): (1) Lax-Friedrichs, (2) Lax-Wendroff, (3) Force, (4) HLL
+0      ! Source term: (0) Explicit, (1) Implicit
+0.166666    ! Angle = Number·PI (inclined model)
+10.5  ! auxiliary parameter, the bed friction angle
