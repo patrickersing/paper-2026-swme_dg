@@ -1,7 +1,8 @@
-# paper-2025-swme-dg_dev
+# Entropy analysis and entropy stable DG methods for the Shallow Water Moment Equations
 
-Reproducibility repository for the upcoming paper "Entropy stable discontinuous Galerkin schemes
-for the shallow water moment equations"
+[![License: MIT](https://img.shields.io/badge/License-MIT-success.svg)](https://opensource.org/licenses/MIT)
+
+This reproducibility repository contains the information and code to reproduce the results of the article "Entropy analysis and entropy stable DG methods for the Shallow Water Moment Equations"
 
 ## Installation
 1. Install Julia v1.10
@@ -57,3 +58,7 @@ convergence_test("/examples/elixir_shallowwater_linearized_moments_convergence.j
 ## Authors
 - [Patrick Ersing](https://liu.se/en/employee/pater53) (Linköping University, Sweden)
 - [Julio Cesar Careaga Solis](https://www.rug.nl/staff/j.c.careaga.solis/?lang=en) (University of Groningen, Netherlands)
+
+## Disclaimer
+
+Everything is provided as is and without warranty. Use at your own risk!
