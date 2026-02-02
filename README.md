@@ -1,8 +1,22 @@
 # Entropy analysis and entropy stable DG methods for the Shallow Water Moment Equations
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-success.svg)](https://opensource.org/licenses/MIT)
+[![DOI](https://zenodo.org/badge/1043271198.svg)](https://doi.org/10.5281/zenodo.18460096)
 
 This reproducibility repository contains the information and code to reproduce the results of the article "Entropy analysis and entropy stable DG methods for the Shallow Water Moment Equations"
+
+If you find these results useful, please cite the article mentioned above. If you use the implementations provided here, please also cite this repository as
+
+```bibtex
+@software{ersing2026swmeRepro,
+  title={Reproducibility repository for "Entropy analysis and entropy stable {DG} methods for the {S}hallow {W}ater {M}oment {E}quations"},
+  author={Julio Careaga, Patrick Ersing, Julian Koellermeier, Andrew R. Winters},
+  year={2026},
+  publisher    = {Zenodo},
+  doi          = {10.5281/zenodo.18460096},
+  url          = {https://doi.org/10.5281/zenodo.18460096},
+}
+```
 
 ## Installation
 1. Install Julia v1.10
