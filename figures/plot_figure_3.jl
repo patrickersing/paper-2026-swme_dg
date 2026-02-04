@@ -41,8 +41,8 @@ end
 
 # Create plot
 colors = Makie.wong_colors()
-sizelblx = 25
-sizelbly = 25
+sizelblx = 20
+sizelbly = 20
 
 with_theme(theme_latexfonts()) do
     f = Figure(size = (800, 400))
@@ -50,9 +50,9 @@ with_theme(theme_latexfonts()) do
     g_ns = f[1, 1] = GridLayout()
     g_mm = f[1, 2] = GridLayout()
 
-    ax_ns = Axis(g_ns[1, 1], xlabel = L"t", ylabel = L"\mathcal{D}_{Ns}",
+    ax_ns = Axis(g_ns[1, 1], xlabel = L"t", ylabel = L"\mathcal{D}_{\textrm{Ns}}",
                  xlabelsize = sizelblx, ylabelsize = sizelbly)
-    ax_mm = Axis(g_mm[1, 1], xlabel = L"t", ylabel = L"\mathcal{D}_{MM}",
+    ax_mm = Axis(g_mm[1, 1], xlabel = L"t", ylabel = L"\mathcal{D}_{\textrm{NM}}",
                  xlabelsize = sizelblx, ylabelsize = sizelbly)
 
     # Plot data for polynomial degrees
@@ -72,8 +72,8 @@ with_theme(theme_latexfonts()) do
     # Reset xlimits for all axes
     for ax in (ax_ns, ax_mm)
         Makie.xlims!(ax, (-0.01, 1.0))
-        ax.xticklabelsize = 18
-        ax.yticklabelsize = 18
+        ax.xticklabelsize = 15
+        ax.yticklabelsize = 15
     end
 
     # Add legend
@@ -81,7 +81,7 @@ with_theme(theme_latexfonts()) do
                     [[LineElement(linestyle = :solid, color = colors[i], linewidth = 2)
                       for i in 1:length(nu_vals)]...],
                     [[L"ν=%$(nu_val)" for nu_val in nu_vals]...],
-                    labelsize = 18)
+                    labelsize = 20)
 
     legend.orientation = :horizontal
 

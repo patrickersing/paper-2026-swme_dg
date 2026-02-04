@@ -24,8 +24,8 @@ pd_ref = readdlm("../figures/soln10_Euler_HLL2500.dat", Float64, header = false)
 
 # Create plot
 colors = Makie.wong_colors()
-sizelblx = 25
-sizelbly = 25
+sizelblx = 20
+sizelbly = 20
 
 with_theme(theme_latexfonts()) do
     f = Figure(size = (800, 650))
@@ -66,8 +66,8 @@ with_theme(theme_latexfonts()) do
     # Reset xlimits for all axes
     for ax in (ax_h, ax_v, ax_a1, ax_a2)
         Makie.xlims!(ax, (-1.0, 1.0))
-        ax.xticklabelsize = 18
-        ax.yticklabelsize = 18
+        ax.xticklabelsize = 15
+        ax.yticklabelsize = 15
     end
 
     # Add legend
@@ -77,7 +77,7 @@ with_theme(theme_latexfonts()) do
                          for i in 1:length(ref_levels)]...,
                         LineElement(linestyle = :dash, color = :black, linewidth = 3)],
                     [[L"K=%$(2^ref_level)" for ref_level in ref_levels]..., "Ref"],
-                    labelsize = 18)
+                    labelsize = 20)
 
     legend.orientation = :horizontal
 

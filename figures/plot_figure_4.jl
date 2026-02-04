@@ -35,8 +35,8 @@ mat, head = readdlm(joinpath("out", "analysis.dat"), header = true)
 df_nwb = DataFrame(mat, vec(head))
 
 # Create plot
-sizelblx = 25
-sizelbly = 25
+sizelblx = 20
+sizelbly = 20
 
 with_theme(theme_latexfonts()) do
     f = Figure(size = (800, 650))
@@ -74,14 +74,14 @@ with_theme(theme_latexfonts()) do
     # Reset xlimits for all axes
     for ax in (ax_h_wb, ax_v_wb, ax_a1_wb, ax_a2_wb)
         Makie.xlims!(ax, (-4.0, 4.0))
-        ax.xticklabelsize = 18
-        ax.yticklabelsize = 18
+        ax.xticklabelsize = 15
+        ax.yticklabelsize = 15
     end
 
     legend = Legend(f[3, 1:2],
                     [label_wb, label_nwb, label_b],
                     ["WB", "NWB", L"b"],
-                    labelsize = 18)
+                    labelsize = 20)
 
     legend.orientation = :horizontal
 
@@ -90,7 +90,7 @@ end
 
 ## Figure for entropy over time and well-balanced error
 with_theme(theme_latexfonts()) do
-    f = Figure(size = (700, 300))
+    f = Figure(size = (800, 350))
     ax_left = Axis(f[1, 1], xlabel = "t",
                    ylabel = L"\frac{1}{|\Omega|}\int_{\Omega} \mathbb{E}(t) \,\text{d}x", xlabelsize = 20, ylabelsize = 15,)
     ax_right = Axis(f[1, 2], xlabel = "t",
@@ -106,13 +106,13 @@ with_theme(theme_latexfonts()) do
 
     legend = Legend(f[2, 1:2],
                     [label_wb, label_nwb],
-                    ["WB", "NWB"])
+                    ["WB", "NWB"], labelsize = 20)
 
     # Reset xlimits for all axes
     for ax in (ax_left, ax_right)
         Makie.xlims!(ax, (0.0, 8000.0))
-        ax.xticklabelsize = 18
-        ax.yticklabelsize = 18
+        ax.xticklabelsize = 15
+        ax.yticklabelsize = 15
     end
 
     legend.orientation = :horizontal
