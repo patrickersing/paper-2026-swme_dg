@@ -20,6 +20,10 @@ pd_wb = PlotData1D(sol)
 mat, head = readdlm(joinpath("out", "analysis.dat"), header = true)
 df_wb = DataFrame(mat, vec(head))
 
+# Compute maximum node-wise lake-at-rest error
+sol_wb = sol[end]
+wb_error = maximum(abs.(1.75 .- sol_wb[1:5:end] .- sol_wb[5:5:end]))
+
 ## Run with NWB configuration
 trixi_include("../examples/elixir_shallowwater_moments_stone_throw.jl",
               equations = ShallowWaterMomentEquations1D(gravity = 9.812, H0 = 1.75,
@@ -34,6 +38,14 @@ pd_nwb = PlotData1D(sol)
 mat, head = readdlm(joinpath("out", "analysis.dat"), header = true)
 df_nwb = DataFrame(mat, vec(head))
 
+# Compute maximum node-wise lake-at-rest error
+sol_nwb = sol[end]
+nwb_error = maximum(abs.(1.75 .- sol_nwb[1:5:end] .- sol_nwb[5:5:end]))
+
+# Print maximum node-wise lake-at-rest error
+println("Maximum node-wise lake-at-rest error (WB): ", wb_error)
+println("Maximum node-wise lake-at-rest error (NWB): ", nwb_error)
+
 # Create plot
 sizelblx = 20
 sizelbly = 20
@@ -46,7 +58,7 @@ with_theme(theme_latexfonts()) do
     g_a1 = f[2, 1] = GridLayout()
     g_a2 = f[2, 2] = GridLayout()
 
-    ax_h_wb = Axis(g_h[1, 1], xlabel = L"x", ylabel = L"h", xlabelsize = sizelblx,
+    ax_h_wb = Axis(g_h[1, 1], xlabel = L"x", ylabel = L"h + b", xlabelsize = sizelblx,
                    ylabelsize = sizelbly)
     ax_v_wb = Axis(g_v[1, 1], xlabel = L"x", ylabel = L"u_m", xlabelsize = sizelblx,
                    ylabelsize = sizelbly)
@@ -92,9 +104,13 @@ end
 with_theme(theme_latexfonts()) do
     f = Figure(size = (800, 350))
     ax_left = Axis(f[1, 1], xlabel = "t",
-                   ylabel = L"\frac{1}{|\Omega|}\int_{\Omega} \mathbb{E}(t) \,\text{d}x", xlabelsize = 20, ylabelsize = 15,)
+                   ylabel = L"\frac{1}{|\Omega|}\int_{\Omega} \mathbb{E}(t) \,\text{d}x",
+                   xlabelsize = 20, ylabelsize = 15)
+    # Set a logarithmic y-axis for the right plot
     ax_right = Axis(f[1, 2], xlabel = "t",
-                    ylabel = L"\frac{1}{|\Omega|}\int_{\Omega} |h(t) - h(0)| \,\text{d}x", xlabelsize = 20,ylabelsize = 15,)
+                    ylabel = L"\frac{1}{|\Omega|}\int_{\Omega} |h(t) - h(0)| \,\text{d}x",
+                    xlabelsize = 20, ylabelsize = 15,
+                    yscale = log10)
 
     # Plot entropy on left axis
     label_wb = lines!(ax_left, df_wb.time, df_wb.entropy, linewidth = 2)
@@ -114,6 +130,9 @@ with_theme(theme_latexfonts()) do
         ax.xticklabelsize = 15
         ax.yticklabelsize = 15
     end
+
+    # Adapt y-limit for the right axes
+    Makie.ylims!(ax_right, (1e-16, 1e1))
 
     legend.orientation = :horizontal
 

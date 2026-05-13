@@ -83,12 +83,11 @@ ode = semidiscretize(semi, tspan)
 # Callbacks
 summary_callback = SummaryCallback()
 
-analysis_interval = 10000
+analysis_interval = 1000
 analysis_callback = AnalysisCallback(semi, interval = analysis_interval,
                                      save_analysis = true,
                                      extra_analysis_integrals = (entropy,
                                                                  lake_at_rest_error))
-alive_callback = AliveCallback(analysis_interval = analysis_interval)
 save_solution = SaveSolutionCallback(dt = 100.0, save_initial_solution = true,
                                      save_final_solution = true)
 stepsize_callback = StepsizeCallback(cfl = 0.9)
