@@ -108,7 +108,7 @@ with_theme(theme_latexfonts()) do
                    xlabelsize = 20, ylabelsize = 15)
     # Set a logarithmic y-axis for the right plot
     ax_right = Axis(f[1, 2], xlabel = "t",
-                    ylabel = L"\frac{1}{|\Omega|}\int_{\Omega} |h(t) - h(0)| \,\text{d}x",
+                    ylabel = L"\frac{1}{|\Omega|}\int_{\Omega} |h(t) - h(t_0)| \,\text{d}x",
                     xlabelsize = 20, ylabelsize = 15,
                     yscale = log10)
 
