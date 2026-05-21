@@ -517,7 +517,9 @@ end
         w_moments[i] = a[i] / (2 * i + 1)
     end
 
-    return SVector(w1, w2, w_moments..., b)
+    w4 = g * h
+
+    return SVector(w1, w2, w_moments..., w4)
 end
 
 @inline function Trixi.waterheight(u, equations::ShallowWaterMomentEquations1D)
