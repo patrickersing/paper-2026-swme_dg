@@ -9,8 +9,8 @@ If you find these results useful, please cite the article mentioned above. If yo
 
 ```bibtex
 @software{ersing2026swmeRepro,
-  title={Reproducibility repository for "Entropy analysis and entropy stable {DG} methods for the {S}hallow {W}ater {M}oment {E}quations"},
-  author={Julio Careaga, Patrick Ersing},
+  title={Reproducibility repository for "{E}ntropy analysis and entropy stable {DG} methods for the {1D} {S}hallow {W}ater {M}oment {E}quations"},
+  author={Careaga, Julio and Ersing, Patrick and Winters, Andrew},
   year={2026},
   publisher    = {Zenodo},
   doi          = {10.5281/zenodo.18460096},
