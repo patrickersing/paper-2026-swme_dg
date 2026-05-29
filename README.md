@@ -22,7 +22,7 @@ If you find these results useful, please cite the article mentioned above. If yo
 1. Install Julia v1.10
 2. Download the repository
 ```
-git clone git@github.com:patrickersing/paper-2025-swme-dg_dev.git
+git clone git@github.com:patrickersing/paper-2026-swme-dg_dev.git
 ```
 1. Set the working directory to the main folder and instantiate the Julia environment using
 ```bash
