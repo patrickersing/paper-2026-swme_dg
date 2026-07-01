@@ -244,8 +244,17 @@ end
     for i in eachmoment(equations)
         f2 += ha[i] * a[i] / (2 * i + 1)
     end
-    f_moments = MArray{nmoments(equations), real(equations)}(2 * ha * v)
-    contract_tensor!(f_moments, equations.A, a, a)
+
+    # Compute the moment fluxes
+    f_moments = MVector{nmoments(equations), real(equations)}(2 * ha * v)
+
+    # Add the moment tensor contributions
+    for i in eachmoment(equations),
+        j in eachmoment(equations),
+        k in eachmoment(equations)
+
+        f_moments[i] += equations.A[i, j, k] * ha[j] * a[k]
+    end
 
     return SVector{nmoments(equations) + 3, real(equations)}(f1, f2, f_moments..., 0)
 end
@@ -291,13 +300,13 @@ To obtain an entropy stable formulation the `surface_flux` can be set as
         f2 += ha_avg[i] * a_avg[i] / (2 * i + 1)
     end
 
-    # Compute the moment fluxes.
+    # Compute the moment fluxes
     f_moments = MVector{nmoments(equations), real(equations)}(hv_avg * a_avg +
                                                               ha_avg * v_avg)
-    # TODO: The tensor contraction still allocates heavily. How can we avoid this? 
-    for k in eachmoment(equations),
+    # Add the moment tensor contributions
+    for i in eachmoment(equations),
         j in eachmoment(equations),
-        i in eachmoment(equations)
+        k in eachmoment(equations)
 
         f_moments[i] += equations.A[i, j, k] * ha_avg[j] * a_avg[k]
     end
@@ -344,10 +353,11 @@ When the bottom topography is nonzero this scheme will be well-balanced when use
 
     # Compute the moment fluxes.
     f_moments = MVector{nmoments(equations), real(equations)}(-v_ll * ha_jump)
-    # TODO: The tensor contraction still allocates heavily. How can we avoid this? 
-    for k in eachmoment(equations),
+    
+    # Add the moment tensor contributions
+    for i in eachmoment(equations),
         j in eachmoment(equations),
-        i in eachmoment(equations)
+        k in eachmoment(equations)
 
         f_moments[i] += equations.B[i, j, k] * a_ll[k] * ha_jump[j]
     end
